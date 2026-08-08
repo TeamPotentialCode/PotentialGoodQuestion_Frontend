@@ -1,0 +1,62 @@
+import type { Phase, PlayEvent } from './types';
+
+// Phase 변형이 추가되면 각 셀렉터가 컴파일 에러를 낸다
+function assertNever(x: never): never {
+  throw new Error(`unreachable phase: ${JSON.stringify(x)}`);
+}
+
+// 하드웨어 점유가 단일값이라 마이크·스피커 동시 점유가 구조적으로 불가능하다 —
+// iOS에서 캐릭터 음성 볼륨이 죽는 원인을 타입으로 차단한다
+export function hardwareOwner(phase: Phase): 'none' | 'mic' | 'speaker' {
+  switch (phase.tag) {
+    case 'recording':
+      return 'mic';
+    case 'narrating':
+    case 'speaking':
+      return 'speaker';
+    case 'locked':
+    case 'loading':
+    case 'awaitingChild':
+    case 'transcribing':
+    case 'reviewing':
+    case 'analyzing':
+    case 'error':
+    case 'sceneComplete':
+    case 'fatal':
+      return 'none';
+    default:
+      return assertNever(phase);
+  }
+}
+
+export function sessionMode(phase: Phase): 'playback' | 'play-and-record' {
+  // TAP_SEND 시 recorder를 먼저 내리므로(계획서 §8) transcribing 이후는 playback이다
+  return phase.tag === 'recording' ? 'play-and-record' : 'playback';
+}
+
+// 상태별 활성 버튼 — 어떤 phase에서도 2개를 넘지 않는다
+export function availableActions(phase: Phase): PlayEvent['type'][] {
+  switch (phase.tag) {
+    case 'locked':
+      return ['TAP_UNLOCK'];
+    case 'awaitingChild':
+      return ['TAP_SPEAK'];
+    case 'recording':
+      return ['TAP_SEND'];
+    case 'reviewing':
+      return ['TAP_RERECORD', 'TAP_SEND'];
+    case 'error':
+      return ['TAP_RETRY'];
+    case 'sceneComplete':
+      return ['TAP_NEXT_SCENE'];
+    case 'loading':
+    case 'narrating':
+    case 'speaking':
+    case 'transcribing':
+    case 'analyzing':
+    case 'fatal':
+      return [];
+    default:
+      return assertNever(phase);
+  }
+}
