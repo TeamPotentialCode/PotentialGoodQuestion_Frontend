@@ -1,0 +1,48 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@theme",
+      "description": "Tailwind CSS v4 — 디자인 토큰을 테마 변수(유틸리티)로 등록한다.",
+      "references": [
+        { "name": "Tailwind Docs", "url": "https://tailwindcss.com/docs/theme" }
+      ]
+    },
+    {
+      "name": "@utility",
+      "description": "Tailwind CSS v4 — 커스텀 유틸리티를 정의한다."
+    },
+    {
+      "name": "@variant",
+      "description": "Tailwind CSS v4 — CSS 안에서 variant를 적용한다."
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Tailwind CSS v4 — 커스텀 variant를 정의한다."
+    },
+    {
+      "name": "@source",
+      "description": "Tailwind CSS v4 — 클래스 스캔 대상 소스를 지정한다."
+    },
+    {
+      "name": "@plugin",
+      "description": "Tailwind CSS v4 — JS 플러그인을 로드한다."
+    },
+    {
+      "name": "@config",
+      "description": "Tailwind CSS v4 — JS 설정 파일을 로드한다."
+    },
+    {
+      "name": "@reference",
+      "description": "Tailwind CSS v4 — 다른 스타일시트를 참조용으로 가져온다."
+    },
+    {
+      "name": "@apply",
+      "description": "Tailwind CSS — 유틸리티 클래스를 CSS 규칙에 인라인한다."
+    },
+    {
+      "name": "@tailwind",
+      "description": "Tailwind CSS — 레이어 삽입 지시자."
+    }
+  ]
+}

@@ -180,6 +180,7 @@ Temporary Items
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/*.code-snippets
+!.vscode/tailwind-v4.css-data.json
 
 # Local History for Visual Studio Code
 .history/

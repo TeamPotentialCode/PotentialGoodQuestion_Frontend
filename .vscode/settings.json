@@ -1,0 +1,6 @@
+{
+  // Tailwind v4 at-rule(@theme 등)을 내장 CSS 검사기가 몰라서 에러로 표시하는 것 방지
+  "css.customData": [".vscode/tailwind-v4.css-data.json"],
+  // 워크스페이스 TypeScript 버전 사용 (전역 TS와 버전 차이로 인한 유령 에러 방지)
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

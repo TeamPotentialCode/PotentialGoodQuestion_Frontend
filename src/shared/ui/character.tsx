@@ -1,0 +1,62 @@
+import type { HTMLAttributes } from 'react';
+import { cva } from 'class-variance-authority';
+import { cn } from '@/shared/ui/cn';
+
+interface CharacterProps extends HTMLAttributes<HTMLDivElement> {
+  name: string;
+  imageUrl?: string | null;
+  /** speaking: 입 위치 점 애니메이션 / thinking: 캐릭터 위 점 3개 (모션 위치) */
+  state?: 'idle' | 'speaking' | 'thinking';
+  size?: 'md' | 'lg';
+}
+
+const box = cva('relative flex items-center justify-center rounded-card bg-surface-raised', {
+  variants: {
+    size: {
+      md: 'size-40 md:size-56',
+      lg: 'size-56 md:size-72',
+    },
+  },
+  defaultVariants: { size: 'md' },
+});
+
+export function Character({
+  name,
+  imageUrl = null,
+  state = 'idle',
+  size,
+  className,
+  ...rest
+}: CharacterProps) {
+  return (
+    <div className={cn('flex flex-col items-center gap-2', className)} {...rest}>
+      {state === 'thinking' && (
+        <div aria-hidden className="flex gap-1.5">
+          <Dot delay="0ms" />
+          <Dot delay="150ms" />
+          <Dot delay="300ms" />
+        </div>
+      )}
+      <div aria-hidden className={box({ size })}>
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- 목 회색박스 단계, 시안 후 next/image 전환
+          <img src={imageUrl} alt="" className="size-full rounded-card object-cover" />
+        ) : (
+          <span className="text-title text-ink-soft">{name}</span>
+        )}
+        {state === 'speaking' && (
+          <span className="absolute bottom-[22%] left-1/2 size-3 -translate-x-1/2 animate-pulse rounded-full bg-ink-soft" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Dot({ delay }: { delay: string }) {
+  return (
+    <span
+      className="size-2.5 animate-bounce rounded-full bg-ink-soft"
+      style={{ animationDelay: delay }}
+    />
+  );
+}
