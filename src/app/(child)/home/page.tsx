@@ -59,12 +59,10 @@ export default function HomePage() {
                   ))}
                 </ul>
               )}
-              {/* 등록된 아이가 있어도 더 등록하러 갈 수 있어야 한다.
-                  수정·삭제 기능이 없으므로 "관리"라고 부르지 않는다.
-                  문구는 앱 전체에서 쓰는 "등록"으로 통일한다 */}
+              {/* 등록된 아이가 있어도 진입할 수 있어야 한다 */}
               <Link href="/children">
                 <TouchTarget look={children.data.length === 0 ? 'solid' : 'outline'}>
-                  아이 등록하기
+                  {children.data.length === 0 ? '아이 등록하기' : '아이 관리'}
                 </TouchTarget>
               </Link>
             </Stack>

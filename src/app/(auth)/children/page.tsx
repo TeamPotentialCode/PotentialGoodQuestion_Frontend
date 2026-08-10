@@ -13,6 +13,7 @@ export default function ChildrenPage() {
   // 등록 가능 인원은 백엔드만 알고 있다(ChildService.MAX_CHILDREN).
   // 프론트는 그 값을 복제하지 않고, 서버가 정원 초과를 알려주면 그때 폼을 접는다
   const [limitMessage, setLimitMessage] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const children = useQuery({
     queryKey: ['children'],
@@ -33,42 +34,64 @@ export default function ChildrenPage() {
   }
 
   const registered = children.data ?? [];
+  const isEditing = editingId !== null;
 
   return (
     <Stack gap="lg">
-      {/* 정원이 차서 폼이 닫히면 남는 건 목록 확인뿐이라 제목을 바꾼다 */}
-      <h1 className="text-display font-bold text-ink">
-        {limitMessage ? '등록된 아이' : '아이 등록'}
-      </h1>
+      <h1 className="text-display font-bold text-ink">아이 관리</h1>
 
       {registered.length > 0 && (
-        // 제목은 h1 이 이미 맡고 있으므로 여기서는 aria-label 로만 이름을 준다
         <section aria-label="등록된 아이" className="flex flex-col gap-2">
           <ul className="flex flex-col gap-2">
-            {registered.map((child) => (
-              <li key={child.childId} className="rounded-card bg-surface-raised p-4">
-                <p className="text-title font-semibold text-ink">{child.name}</p>
-                <p className="text-body text-ink-soft">
-                  만 {child.age}세 · {child.birthYear}년생
-                </p>
-              </li>
-            ))}
+            {registered.map((child) =>
+              editingId === child.childId ? (
+                <li key={child.childId} className="rounded-card bg-surface-raised p-4">
+                  <Stack gap="md">
+                    <ChildForm child={child} onDone={() => setEditingId(null)} />
+                    <TouchTarget look="ghost" onClick={() => setEditingId(null)}>
+                      취소
+                    </TouchTarget>
+                  </Stack>
+                </li>
+              ) : (
+                <li
+                  key={child.childId}
+                  className="flex items-center justify-between gap-4 rounded-card bg-surface-raised p-4"
+                >
+                  <div>
+                    <p className="text-title font-semibold text-ink">{child.name}</p>
+                    <p className="text-body text-ink-soft">
+                      만 {child.age}세 · {child.birthYear}년생
+                    </p>
+                  </div>
+                  <TouchTarget
+                    look="outline"
+                    aria-label={`${child.name} 수정`}
+                    onClick={() => setEditingId(child.childId)}
+                  >
+                    수정
+                  </TouchTarget>
+                </li>
+              ),
+            )}
           </ul>
         </section>
       )}
 
-      {limitMessage ? (
-        <p className="text-body text-ink-soft">{limitMessage}</p>
-      ) : (
-        <Stack gap="md">
-          <p className="text-body text-ink-soft">
-            {registered.length === 0
-              ? '이야기를 함께할 아이의 정보를 알려 주세요.'
-              : '아이를 더 등록할 수 있어요.'}
-          </p>
-          <ChildForm onLimitReached={setLimitMessage} />
-        </Stack>
-      )}
+      {/* 편집 중에는 폼이 두 개 뜨지 않도록 신규 등록 폼을 감춘다 */}
+      {!isEditing &&
+        (limitMessage ? (
+          <p className="text-body text-ink-soft">{limitMessage}</p>
+        ) : (
+          <Stack gap="md">
+            <p className="text-body text-ink-soft">
+              {registered.length === 0
+                ? '이야기를 함께할 아이의 정보를 알려 주세요.'
+                : '아이를 더 등록할 수 있어요.'}
+            </p>
+            <ChildForm onLimitReached={setLimitMessage} />
+          </Stack>
+        ))}
 
       {registered.length > 0 && (
         <Link href="/home">

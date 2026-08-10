@@ -9,3 +9,8 @@ export function getChildren(): Promise<Child[]> {
 export function createChild(request: ChildUpsertRequest): Promise<Child> {
   return apiRequest<Child>('/children', { body: request });
 }
+
+// 수정 요청 형태는 등록과 동일하다 (백엔드 ChildRequestDto.Update = Create)
+export function updateChild(childId: number, request: ChildUpsertRequest): Promise<Child> {
+  return apiRequest<Child>(`/children/${childId}`, { method: 'PATCH', body: request });
+}

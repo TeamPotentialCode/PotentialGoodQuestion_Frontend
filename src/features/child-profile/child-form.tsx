@@ -3,30 +3,39 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type SubmitEvent } from 'react';
 import { ApiError } from '@/core/api/client';
-import { createChild } from '@/features/child-profile/api';
+import type { Child, ChildUpsertRequest } from '@/core/api/types';
+import { createChild, updateChild } from '@/features/child-profile/api';
 import { childErrorMessage } from '@/features/child-profile/error-message';
 import { childSchema } from '@/features/child-profile/schema';
 import { toFieldErrors, type FieldErrors } from '@/features/auth/schema';
 import { Field, Stack, TouchTarget } from '@/shared/ui';
 
 interface ChildFormProps {
-  /** 서버가 정원 초과(400)를 알려줬을 때. 등록 가능 인원은 백엔드만 알고 있다 */
+  /** 주면 수정, 없으면 신규 등록 */
+  child?: Child;
+  /** 저장이 끝난 뒤 화면이 편집 모드를 닫는 데 쓴다 */
+  onDone?: () => void;
+  /** 등록에서만 발생. */
   onLimitReached?: (message: string) => void;
 }
 
-export function ChildForm({ onLimitReached }: ChildFormProps) {
+export function ChildForm({ child, onDone, onLimitReached }: ChildFormProps) {
   const queryClient = useQueryClient();
   const formRef = useRef<HTMLFormElement>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const isEditing = child !== undefined;
 
   const mutation = useMutation({
-    mutationFn: createChild,
+    mutationFn: (request: ChildUpsertRequest) =>
+      child ? updateChild(child.childId, request) : createChild(request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['children'] });
-      formRef.current?.reset(); // 연속 등록을 대비해 입력을 비운다
+      // 등록은 연속 입력을 대비해 비우고, 수정은 화면이 곧 닫히므로 그대로 둔다
+      if (!isEditing) formRef.current?.reset();
+      onDone?.();
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.status === 400) {
+      if (!isEditing && error instanceof ApiError && error.status === 400) {
         onLimitReached?.(childErrorMessage(error));
       }
     },
@@ -54,7 +63,13 @@ export function ChildForm({ onLimitReached }: ChildFormProps) {
   return (
     <form ref={formRef} onSubmit={handleSubmit} noValidate>
       <Stack gap="lg">
-        <Field label="아이 이름" name="name" autoComplete="off" error={fieldErrors.name} />
+        <Field
+          label="아이 이름"
+          name="name"
+          autoComplete="off"
+          defaultValue={child?.name}
+          error={fieldErrors.name}
+        />
         <Field
           label="나이"
           name="age"
@@ -62,6 +77,7 @@ export function ChildForm({ onLimitReached }: ChildFormProps) {
           inputMode="numeric"
           min={1}
           max={20}
+          defaultValue={child?.age}
           hint="만 나이로 입력해 주세요. (1~20)"
           error={fieldErrors.age}
         />
@@ -73,7 +89,13 @@ export function ChildForm({ onLimitReached }: ChildFormProps) {
         )}
 
         <TouchTarget type="submit" size="lg" disabled={mutation.isPending}>
-          {mutation.isPending ? '등록 중…' : '등록하기'}
+          {mutation.isPending
+            ? isEditing
+              ? '수정 중…'
+              : '등록 중…'
+            : isEditing
+              ? '수정하기'
+              : '등록하기'}
         </TouchTarget>
       </Stack>
     </form>

@@ -41,27 +41,27 @@ test('아이가 없으면 등록 폼을 보여주고, 등록하면 목록과 홈
   await page.getByRole('link', { name: '아이 등록하기' }).click();
   await page.waitForURL('**/children');
 
-  await expect(page.getByRole('heading', { name: '아이 등록' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '아이 관리' })).toBeVisible();
   await page.getByLabel('아이 이름').fill('하늘');
   await page.getByLabel('나이').fill('7');
   await page.getByRole('button', { name: '등록하기' }).click();
 
   // 화면에 머문 채 목록이 갱신되고, 입력은 비워져 연속 등록이 가능하다
-  await expect(page.getByRole('heading', { name: '아이 등록' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '아이 관리' })).toBeVisible();
   await expect(page.getByRole('listitem').filter({ hasText: '하늘' })).toBeVisible();
   await expect(page.getByLabel('아이 이름')).toHaveValue('');
 
   await page.getByRole('link', { name: '홈으로' }).click();
   await page.waitForURL('**/home');
   await expect(page.getByText('하늘', { exact: false })).toBeVisible();
-  // 등록된 뒤에도 등록 화면으로 돌아갈 수 있어야 한다
-  await expect(page.getByRole('link', { name: '아이 등록하기' })).toBeVisible();
+  // 등록된 뒤에도 아이 관리 화면으로 돌아갈 수 있어야 한다
+  await expect(page.getByRole('link', { name: '아이 관리' })).toBeVisible();
 });
 
 test('잘못된 입력은 요청을 보내기 전에 막는다', async ({ page }) => {
   await startFresh(page, { withoutChildren: true });
   await page.getByRole('link', { name: '아이 등록하기' }).click();
-  await expect(page.getByRole('heading', { name: '아이 등록' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '아이 관리' })).toBeVisible();
 
   // 백엔드는 나이 범위 위반을 400이 아니라 500으로 돌려주므로 요청 자체가 나가면 안 된다
   let posted = false;
@@ -86,7 +86,7 @@ test('정원이 차면 서버 응답을 보고 폼을 접는다', async ({ page 
   await startFresh(page); // 시드 아이 1명이 있는 상태
   await page.goto('/children');
 
-  await expect(page.getByRole('heading', { name: '아이 등록' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '아이 관리' })).toBeVisible();
   // 정원을 모르는 시점에는 폼이 열려 있다
   await expect(page.getByRole('button', { name: '등록하기' })).toBeVisible();
 
@@ -95,7 +95,56 @@ test('정원이 차면 서버 응답을 보고 폼을 접는다', async ({ page 
   await page.getByRole('button', { name: '등록하기' }).click();
 
   await expect(page.getByText('등록 가능한 아이 수를 초과했습니다.')).toBeVisible();
-  await expect(page.getByRole('heading', { name: '등록된 아이' })).toBeVisible();
   await expect(page.getByRole('button', { name: '등록하기' })).toBeHidden();
   await expect(page.getByRole('link', { name: '홈으로' })).toBeVisible();
+});
+
+test('등록된 아이를 수정하면 목록에 반영된다', async ({ page }) => {
+  await startFresh(page); // 시드 아이 1명이 있는 상태
+  await page.goto('/children');
+
+  const item = page.getByRole('listitem').first();
+  await item.getByRole('button', { name: /수정/ }).click();
+
+  // 기존 값이 채워진 채로 편집 폼이 열린다
+  await expect(page.getByLabel('아이 이름')).not.toHaveValue('');
+  await page.getByLabel('아이 이름').fill('바다');
+  await page.getByLabel('나이').fill('9');
+  await page.getByRole('button', { name: '수정하기' }).click();
+
+  // 편집 모드가 닫히고 목록에 새 값이 보인다
+  await expect(page.getByRole('button', { name: '수정하기' })).toBeHidden();
+  await expect(page.getByRole('listitem').filter({ hasText: '바다' })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: '만 9세' })).toBeVisible();
+});
+
+test('수정 중 취소하면 원래 값이 남는다', async ({ page }) => {
+  await startFresh(page);
+  await page.goto('/children');
+
+  const before = await page.getByRole('listitem').first().innerText();
+  await page.getByRole('listitem').first().getByRole('button', { name: /수정/ }).click();
+  await page.getByLabel('아이 이름').fill('바뀌면안됨');
+  await page.getByRole('button', { name: '취소' }).click();
+
+  await expect(page.getByRole('button', { name: '수정하기' })).toBeHidden();
+  expect(await page.getByRole('listitem').first().innerText()).toBe(before);
+});
+
+test('수정 폼도 잘못된 입력을 요청 전에 막는다', async ({ page }) => {
+  await startFresh(page);
+  await page.goto('/children');
+  await page.getByRole('listitem').first().getByRole('button', { name: /수정/ }).click();
+
+  let patched = false;
+  await page.route('**/api/children/*', (route) => {
+    if (route.request().method() === 'PATCH') patched = true;
+    return route.continue();
+  });
+
+  await page.getByLabel('나이').fill('99');
+  await page.getByRole('button', { name: '수정하기' }).click();
+
+  await expect(formAlert(page).first()).toHaveText('나이는 20살 이하여야 해요.');
+  expect(patched).toBe(false);
 });
