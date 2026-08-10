@@ -64,7 +64,7 @@ test('이미 진행 중이면 시작하기 대신 이어하기를 보여준다',
   const firstSession = page.url();
 
   // 홈을 거쳐 상세로 돌아온다
-  await page.getByRole('link', { name: '홈으로' }).click();
+  await page.getByRole('link', { name: '이야기 나가기' }).click();
   await page.waitForURL('**/home');
   await page.getByRole('link', { name: /방귀 뀌는 며느리/ }).last().click();
   await page.waitForURL('**/stories/1');

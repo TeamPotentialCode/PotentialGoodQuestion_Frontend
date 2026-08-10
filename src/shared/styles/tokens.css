@@ -24,7 +24,7 @@
   --gq-ink: var(--palette-900);
   --gq-ink-soft: var(--palette-600);
   --gq-line: var(--palette-300);
-  --gq-bubble-character: var(--palette-0);
+  --gq-bubble-character: var(--palette-100);
   --gq-bubble-child: var(--palette-200);
   --gq-bubble-narration: var(--palette-100);
   --gq-cta: var(--palette-800);

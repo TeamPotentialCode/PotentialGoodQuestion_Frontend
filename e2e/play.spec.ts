@@ -36,9 +36,27 @@ test('잠금 해제 후 캐릭터 첫 대사가 나오고 아이 차례가 된�
   await enterPlay(page);
   await unlockAndWaitTurn(page);
 
-  // 첫 대사가 말풍선으로 남아 있다
-  await expect(page.getByText(/방귀가 너무 커서 참고 있어/)).toBeVisible();
+  // 고정 대사의 ㅇㅇ 는 치환하지 않고 주석으로 설명한다
+  await expect(page.getByText(/ㅇㅇ아, 사실 나는 방귀가 너무 커서 참고 있어/)).toBeVisible();
+  await expect(page.getByText('* ㅇㅇ = 아이 이름')).toBeVisible();
+  // 헤더에 장면 진행도가 보인다
+  await expect(page.getByText('장면 1 / 4')).toBeVisible();
+  // 좌측에 장면 설명이 보인다
+  await expect(page.getByText(/이야기를 나누는 장면입니다/)).toBeVisible();
   await expect(page.getByRole('button', { name: '말하기' })).toBeVisible();
+});
+
+test('다시 듣기를 눌러도 진행 상태는 그대로다', async ({ page }) => {
+  await enterPlay(page);
+  await unlockAndWaitTurn(page);
+
+  await page.getByRole('button', { name: '캐릭터 대사 다시 듣기' }).click();
+  await page.waitForTimeout(300);
+  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild');
+
+  await page.getByRole('button', { name: '장면 설명 다시 듣기' }).click();
+  await page.waitForTimeout(300);
+  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild');
 });
 
 test('한 턴을 완주한다: 말하기 → 보내기 → 확인 → 보내기 → 캐릭터 응답', async ({ page }) => {
@@ -57,8 +75,9 @@ test('한 턴을 완주한다: 말하기 → 보내기 → 확인 → 보내기 
   await page.getByRole('button', { name: '보내기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild', { timeout: 25000 });
 
-  // 아이 발화와 캐릭터 응답이 모두 로그에 남는다
+  // 캐릭터 대사가 응답으로 교체된다(시안은 로그를 쌓지 않는다)
   await expect(page.getByText(/그랬구나/)).toBeVisible();
+  await expect(page.getByText(/ㅇㅇ아, 사실 나는 방귀가 너무 커서/)).toBeHidden();
 });
 
 test('확인 화면에서 다시 말하기를 누르면 녹음으로 돌아간다', async ({ page }) => {

@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { cva } from 'class-variance-authority';
 import { cn } from '@/shared/ui/cn';
 
@@ -6,19 +6,28 @@ interface SpeechBubbleProps extends HTMLAttributes<HTMLDivElement> {
   speaker: 'character' | 'child' | 'narration';
   /** transcribing 중 아이 말풍선 내부 점 애니메이션 (모션 위치) */
   pending?: boolean;
+  /** 말풍선 안 아래에 붙는 보조 줄 — 주석·"다시 듣기" 처럼 대사에 딸린 것 */
+  footer?: ReactNode;
 }
 
-const bubble = cva('max-w-[34rem] rounded-bubble px-5 py-3 text-bubble', {
+const bubble = cva('max-w-[34rem] rounded-card px-5 py-3 text-bubble', {
   variants: {
     speaker: {
-      character: 'self-start border border-line bg-bubble-character',
+      character: 'self-start bg-bubble-character',
       child: 'self-end bg-bubble-child',
       narration: 'self-center bg-bubble-narration text-ink-soft',
     },
   },
 });
 
-export function SpeechBubble({ speaker, pending = false, className, children, ...rest }: SpeechBubbleProps) {
+export function SpeechBubble({
+  speaker,
+  pending = false,
+  footer,
+  className,
+  children,
+  ...rest
+}: SpeechBubbleProps) {
   return (
     <div className={cn(bubble({ speaker }), className)} {...rest}>
       {pending ? (
@@ -30,6 +39,7 @@ export function SpeechBubble({ speaker, pending = false, className, children, ..
       ) : (
         children
       )}
+      {footer && <div className="mt-2 flex items-center gap-3">{footer}</div>}
     </div>
   );
 }

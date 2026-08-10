@@ -2,7 +2,7 @@
 
 import type { Phase, PlayEvent } from '@/core/play-session/types';
 import { availableActions } from '@/core/play-session/selectors';
-import { Stack, TouchTarget } from '@/shared/ui';
+import { Icon, Stack, TouchTarget } from '@/shared/ui';
 
 interface PlayControlsProps {
   phase: Phase;
@@ -33,7 +33,7 @@ export function PlayControls({ phase, onAction }: PlayControlsProps) {
                 aria-label="말하기"
                 onClick={() => onAction({ type })}
               >
-                🎤
+                <Icon name="mic" className="size-9 text-cta-ink" />
               </TouchTarget>
             );
           case 'TAP_SEND':
