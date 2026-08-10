@@ -3,11 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { clearTokens } from '@/core/api/auth-token';
-import type { Child } from '@/core/api/types';
 import { useRequireAuth } from '@/features/auth/use-session';
-import { getChildren } from '@/features/child-profile/api';
+import { ChildPicker } from '@/features/child-profile/child-picker';
+import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getHome } from '@/features/home/api';
 import { StoryList } from '@/features/home/story-list';
 import { Screen, Stack, TouchTarget } from '@/shared/ui';
@@ -15,23 +14,12 @@ import { Screen, Stack, TouchTarget } from '@/shared/ui';
 export default function HomePage() {
   const router = useRouter();
   const authenticated = useRequireAuth();
-  // 아이가 여러 명일 수 있다. 선택값은 화면 상태로만 들고, 기본은 첫 아이
-  const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
-
-  const children = useQuery({
-    queryKey: ['children'],
-    queryFn: getChildren,
-    enabled: authenticated,
-  });
-
-  const childList = children.data ?? [];
-  const selectedChild: Child | undefined =
-    childList.find((c) => c.childId === selectedChildId) ?? childList[0];
+  const child = useSelectedChild(authenticated);
 
   const home = useQuery({
-    queryKey: ['home', selectedChild?.childId],
-    queryFn: () => getHome(selectedChild!.childId),
-    enabled: authenticated && selectedChild !== undefined,
+    queryKey: ['home', child.selected?.childId],
+    queryFn: () => getHome(child.selected!.childId),
+    enabled: authenticated && child.selected !== undefined,
   });
 
   if (!authenticated) {
@@ -49,45 +37,29 @@ export default function HomePage() {
 
         <section aria-label="아이" className="flex flex-col gap-2 rounded-card bg-surface-raised p-4">
           <h2 className="text-title font-semibold text-ink">등록된 아이</h2>
-          {children.isPending && <p className="text-body text-ink-soft">불러오는 중…</p>}
-          {children.isError && (
+          {child.query.isPending && <p className="text-body text-ink-soft">불러오는 중…</p>}
+          {child.query.isError && (
             <p role="alert" className="text-body text-ink">
               아이 목록을 불러오지 못했어요.
             </p>
           )}
-          {children.data && (
+          {child.query.data && (
             <Stack gap="sm" align="start">
-              {childList.length === 0 ? (
+              {child.list.length === 0 ? (
                 <p className="text-body text-ink-soft">아직 등록된 아이가 없어요.</p>
-              ) : childList.length === 1 ? (
-                <p className="text-body text-ink">
-                  {selectedChild?.name} · 만 {selectedChild?.age}세
-                </p>
               ) : (
-                // 2명 이상일 때만 선택 UI 를 보여준다
-                <Stack direction="row" gap="sm" className="flex-wrap">
-                  {childList.map((child) => (
-                    <TouchTarget
-                      key={child.childId}
-                      look={child.childId === selectedChild?.childId ? 'solid' : 'outline'}
-                      aria-pressed={child.childId === selectedChild?.childId}
-                      onClick={() => setSelectedChildId(child.childId)}
-                    >
-                      {child.name}
-                    </TouchTarget>
-                  ))}
-                </Stack>
+                <ChildPicker list={child.list} selected={child.selected} onSelect={child.select} />
               )}
               <Link href="/children">
-                <TouchTarget look={childList.length === 0 ? 'solid' : 'outline'}>
-                  {childList.length === 0 ? '아이 등록하기' : '아이 관리'}
+                <TouchTarget look={child.list.length === 0 ? 'solid' : 'outline'}>
+                  {child.list.length === 0 ? '아이 등록하기' : '아이 관리'}
                 </TouchTarget>
               </Link>
             </Stack>
           )}
         </section>
 
-        {selectedChild && (
+        {child.selected && (
           <>
             <section aria-label="이어하기" className="flex flex-col gap-2">
               <h2 className="text-title font-semibold text-ink">이어하기</h2>
@@ -99,7 +71,10 @@ export default function HomePage() {
               )}
               {home.data &&
                 (home.data.continueSession ? (
-                  <div className="rounded-card bg-surface-raised p-4">
+                  <Link
+                    href={`/play/${home.data.continueSession.sessionId}`}
+                    className="block rounded-card bg-surface-raised p-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+                  >
                     <p className="text-title font-semibold text-ink">
                       {home.data.continueSession.storyTitle}
                     </p>
@@ -108,7 +83,7 @@ export default function HomePage() {
                         ? `${home.data.continueSession.currentSceneOrder}번째 장면까지 진행했어요.`
                         : '아직 시작하지 않았어요.'}
                     </p>
-                  </div>
+                  </Link>
                 ) : (
                   <p className="text-body text-ink-soft">진행 중인 이야기가 없어요.</p>
                 ))}

@@ -9,6 +9,7 @@ import type {
   ChildUpsertRequest,
   HomeData,
   LoginRequest,
+  SessionInfo,
   PostOrderRequest,
   PostRetellingRequest,
   SignupRequest,
@@ -31,6 +32,7 @@ import {
   MOCK_CHILD_NAME,
   nextSuggestedUtterance,
   submitUtterance,
+  type MockSession,
 } from '@/mocks/session-store';
 
 const api = (path: string) => `*/api${path}`;
@@ -104,7 +106,15 @@ const seedChild = (): Child => ({
   createdAt: '2026-08-08T09:00:00',
 });
 
-let children: Child[] = [seedChild()];
+// "아이 없음" 상태는 새로고침 뒤에도 유지돼야 한다(등록 화면을 여러 경로로 확인하므로).
+// 목 상태는 페이지 모듈 변수라 리로드마다 초기화되므로, 시나리오 스위치와 같이 저장소에 기록한다
+const NO_CHILDREN_KEY = 'gq:msw:noChildren';
+
+function noChildrenFlag(): boolean {
+  return typeof localStorage !== 'undefined' && localStorage.getItem(NO_CHILDREN_KEY) === '1';
+}
+
+let children: Child[] = noChildrenFlag() ? [] : [seedChild()];
 let nextChildId = 2;
 
 /** 인증·아이 상태를 시드로 되돌린다. 테스트 간 격리에 쓴다. */
@@ -114,14 +124,34 @@ export function resetApiState(): void {
   nextParentId = 2;
   validRefreshToken = '';
   refreshRecovered = false;
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(NO_CHILDREN_KEY);
   children = [seedChild()];
   nextChildId = 2;
 }
 
-/** 아이 미등록 상태를 만든다(등록 화면 확인용). */
+/** 아이 미등록 상태를 만든다(등록 화면 확인용). 새로고침해도 유지된다. */
 export function clearChildren(): void {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(NO_CHILDREN_KEY, '1');
   children = [];
   nextChildId = 2;
+}
+
+// 실백엔드 SessionInfo 와 같은 형태로 변환한다.
+// 목 내부는 장면 페이로드를 들고 있지만 응답에는 currentSceneId 만 노출한다
+function toSessionInfo(session: MockSession): SessionInfo {
+  const child = children.find((c) => c.childId === session.childId);
+  return {
+    sessionId: session.sessionId,
+    storyId: session.storyId,
+    storyTitle: MOCK_STORY.title,
+    childId: session.childId,
+    childName: child?.name ?? MOCK_CHILD_NAME,
+    status: session.status,
+    currentSceneId: buildScenePayload(session).sceneId,
+    currentChildTurnCount: session.turnCount,
+    startedAt: '2026-08-10T10:00:00',
+    completedAt: session.status === 'COMPLETED' ? '2026-08-10T10:30:00' : null,
+  };
 }
 
 export const handlers = [
@@ -179,6 +209,8 @@ export const handlers = [
       createdAt: '2026-08-10T09:00:00',
     };
     children.push(child);
+    // 등록됐으니 "아이 없음" 상태를 해제한다
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(NO_CHILDREN_KEY);
     return ok(child, 201);
   }),
 
@@ -246,8 +278,9 @@ export const handlers = [
     const denied = requireAuth(request);
     if (denied) return denied;
     const body = (await request.json()) as { childId: number };
-    const { sessionId, scene } = createSession(Number(params.storyId), body.childId);
-    return ok({ sessionId, scene }, 201);
+    const { sessionId } = createSession(Number(params.storyId), body.childId);
+    const session = getSession(sessionId);
+    return ok(toSessionInfo(session!), 201);
   }),
 
   // ---------- 세션 ----------
@@ -257,14 +290,7 @@ export const handlers = [
     if (denied) return denied;
     const session = getSession(Number(params.sessionId));
     if (!session) return fail(404, 'SESSION_001', '세션을 찾을 수 없습니다.');
-    return ok({
-      sessionId: session.sessionId,
-      storyId: session.storyId,
-      storyTitle: MOCK_STORY.title,
-      status: session.status,
-      scene: buildScenePayload(session),
-      messages: session.messages,
-    });
+    return ok(toSessionInfo(session));
   }),
 
   http.post(api('/sessions/:sessionId/utterances'), async ({ request, params }) => {

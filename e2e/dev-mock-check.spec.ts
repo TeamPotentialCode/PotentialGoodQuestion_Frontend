@@ -10,7 +10,7 @@ test('목 콘솔로 4개 장면을 완주하고 사후활동·리포트까지 �
   await expect(log).toContainText('로그인: 데모 보호자');
 
   await page.getByRole('button', { name: '세션 생성' }).click();
-  await expect(log).toContainText('장면 3 며느리, 내레이션 2개, maxTurns 4');
+  await expect(log).toContainText('현재 장면 3');
 
   // 제안 발화로 4개 장면 완주 (씬당 preferredTurns 2~3턴)
   const turnButton = page.getByRole('button', { name: '한 턴 (제안 발화)' });
@@ -37,7 +37,7 @@ test('아무말 반복은 GUIDED를 거쳐 MAX_TURNS로 닫힌다', async ({ pag
   await page.getByRole('button', { name: '로그인' }).click();
   await expect(log).toContainText('로그인:');
   await page.getByRole('button', { name: '세션 생성' }).click();
-  await expect(log).toContainText('장면 3');
+  await expect(log).toContainText('현재 장면 3');
 
   const babble = page.getByRole('button', { name: '한 턴 (아무말)' });
   for (let i = 0; i < 4; i += 1) {
@@ -55,7 +55,7 @@ test('stt-empty 시나리오는 빈 텍스트로 턴을 중단한다', async ({ 
   await page.getByRole('button', { name: '로그인' }).click();
   await expect(log).toContainText('로그인:');
   await page.getByRole('button', { name: '세션 생성' }).click();
-  await expect(log).toContainText('장면 3');
+  await expect(log).toContainText('현재 장면 3');
 
   await page.locator('select').selectOption('stt-empty');
   await page.getByRole('button', { name: '한 턴 (제안 발화)' }).click();

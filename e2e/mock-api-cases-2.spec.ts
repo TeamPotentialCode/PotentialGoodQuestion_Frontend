@@ -84,7 +84,7 @@ test('analysis-fail-once: 500 후 같은 Idempotency-Key 재시도가 정상 처
 
   // 실패 턴은 상태를 바꾸지 않았어야 한다
   const before = await api(page, `/sessions/${sessionId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
-  expect(before.body.data.scene.currentChildTurnCount).toBe(0);
+  expect(before.body.data.currentChildTurnCount).toBe(0);
 
   // 같은 키로 재시도 (시나리오는 -once라 자동 복귀됨)
   const retried = await utter(page, accessToken, sessionId, '며느리 입장에서는 속상했을 것 같아요.', 'retry-key');
@@ -92,7 +92,7 @@ test('analysis-fail-once: 500 후 같은 Idempotency-Key 재시도가 정상 처
   expect(retried.body.data.progressResult.mode).toBe('NORMAL');
 
   const after = await api(page, `/sessions/${sessionId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
-  expect(after.body.data.scene.currentChildTurnCount).toBe(1);
+  expect(after.body.data.currentChildTurnCount).toBe(1);
 });
 
 test('stt-fail-always: 복귀 없이 계속 500 (3연속 실패 흐름)', async ({ page }) => {
@@ -182,31 +182,7 @@ test('세션 재사용: 진행 중 세션이 있으면 새로 만들지 않고 �
   await utter(page, accessToken, first.body.data.sessionId, '한 턴 진행한 상태');
   const second = await api(page, '/stories/1/sessions', json({ childId: 1 }, accessToken));
   expect(second.body.data.sessionId).toBe(first.body.data.sessionId);
-  expect(second.body.data.scene.currentChildTurnCount).toBe(1); // 진행 상태 유지
-});
-
-test('장면 페이로드: 내레이션 번들·이름 치환·메시지 누적', async ({ page }) => {
-  await ready(page);
-  const { accessToken } = await login(page);
-  const auth = { Authorization: `Bearer ${accessToken}` };
-  const created = await api(page, '/stories/1/sessions', json({ childId: 1 }, accessToken));
-  const { sessionId, scene } = created.body.data;
-
-  // 대화1(씬3)은 내레이션 2개(도입·전개1)를 번들로 갖는다 (R-01/R-06)
-  expect(scene.sceneId).toBe(3);
-  expect(scene.narration).toHaveLength(2);
-  expect(scene.narration[0].sceneOrder).toBe(1);
-  // ㅇㅇ → 아이 이름 치환 (시드 아이: 문열)
-  expect(scene.characterOpening).toContain('문열');
-  expect(scene.characterOpening).not.toContain('ㅇㅇ');
-  expect(scene.characterClosing).toContain('문열');
-
-  await utter(page, accessToken, sessionId, '며느리 입장에서는 속상했을 것 같아요.');
-  const detail = await api(page, `/sessions/${sessionId}`, { headers: auth });
-  const messages = detail.body.data.messages;
-  expect(messages).toHaveLength(2); // 아이 + 캐릭터
-  expect(messages[0].speakerType).toBe('CHILD');
-  expect(messages[1].speakerType).toBe('CHARACTER');
+  expect(second.body.data.currentChildTurnCount).toBe(1); // 진행 상태 유지
 });
 
 test('STT: 음성 파일 누락 시 400', async ({ page }) => {

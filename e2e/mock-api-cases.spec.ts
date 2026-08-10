@@ -135,7 +135,7 @@ test('Idempotency-Key: 같은 키 재전송은 상태 변경 없이 같은 응�
   expect(second.body.data.childMessageId).toBe(first.body.data.childMessageId);
 
   const detail = await api(page, `/sessions/${sessionId}`, { headers: auth });
-  expect(detail.body.data.scene.currentChildTurnCount).toBe(1); // 턴이 중복 증가하지 않았다
+  expect(detail.body.data.currentChildTurnCount).toBe(1); // 턴이 중복 증가하지 않았다
 });
 
 test('세션 완주: 아무말만으로 MAX_TURNS 완료 후 추가 발화는 400', async ({ page }) => {

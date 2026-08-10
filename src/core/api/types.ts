@@ -103,7 +103,26 @@ export interface HomeData {
   recommendedStories: StorySummary[];
 }
 
-// ---------- 장면·세션 ----------
+// ---------- 세션 ----------
+
+export interface SessionInfo {
+  sessionId: number;
+  storyId: number;
+  storyTitle: string;
+  childId: number;
+  childName: string;
+  status: SessionStatus;
+  // 세션 생성 직후에는 내레이션 장면을 가리킨다
+  currentSceneId: number | null;
+  currentChildTurnCount: number;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+// ---------- 장면 (미확정 — 아직 목 전용) ----------
+// 실백엔드의 장면 조회는 {sceneId, storyId, sceneOrder, imageUrl, sceneDescription,
+// characterName, characterOpening} 7개 필드뿐이고 목록 API도 없다.
+// 아래 형태는 예전 제안안이며 대화 화면 작업에서 정리한다.
 
 export interface NarrationItem {
   sceneId: number;
@@ -132,14 +151,6 @@ export interface SessionMessage {
   text: string;
 }
 
-export interface SessionDetail {
-  sessionId: number;
-  storyId: number;
-  storyTitle: string;
-  status: SessionStatus;
-  scene: ScenePayload;
-  messages: SessionMessage[];
-}
 
 // ---------- 발화 (확정 — audioB64는 확정 시 optional 추가) ----------
 

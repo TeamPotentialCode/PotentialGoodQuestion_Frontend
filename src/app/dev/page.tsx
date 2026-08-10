@@ -9,7 +9,7 @@ import type {
   AuthTokens,
   PostOrderData,
   ReportData,
-  ScenePayload,
+  SessionInfo,
   SttData,
   UtteranceData,
 } from '@/core/api/types';
@@ -36,7 +36,7 @@ function DevConsole() {
   const [busy, setBusy] = useState(false);
   const tokenRef = useRef<string>('');
   const sessionRef = useRef<number | null>(null);
-  const sceneRef = useRef<ScenePayload | null>(null);
+  const sceneRef = useRef<number | null>(null);
 
   const log = (line: string) => setLogs((prev) => [...prev.slice(-30), line]);
 
@@ -85,16 +85,14 @@ function DevConsole() {
   };
 
   const createSession = async () => {
-    const data = await call<{ sessionId: number; scene: ScenePayload }>('/stories/1/sessions', {
+    const data = await call<SessionInfo>('/stories/1/sessions', {
       method: 'POST',
       body: JSON.stringify({ childId: 1 }),
     });
     if (data) {
       sessionRef.current = data.sessionId;
-      sceneRef.current = data.scene;
-      log(
-        `세션 ${data.sessionId} — 장면 ${data.scene.sceneOrder} ${data.scene.characterName}, 내레이션 ${data.scene.narration.length}개, maxTurns ${data.scene.maxTurns}`,
-      );
+      sceneRef.current = data.currentSceneId;
+      log(`세션 ${data.sessionId} — 현재 장면 ${data.currentSceneId} (${data.childName})`);
     }
   };
 
@@ -118,7 +116,7 @@ function DevConsole() {
     const result = await call<UtteranceData>(`/sessions/${sessionRef.current}/utterances`, {
       method: 'POST',
       headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ sceneId: sceneRef.current.sceneId, text, sttRawText: text }),
+      body: JSON.stringify({ sceneId: sceneRef.current, text, sttRawText: text }),
     });
     if (!result) return;
     const p = result.progressResult;
@@ -130,10 +128,10 @@ function DevConsole() {
       if (result.nextSceneId === null) {
         log('이야기 완료! → 사후 활동으로');
       } else {
-        const detail = await call<{ scene: ScenePayload }>(`/sessions/${sessionRef.current}`);
+        const detail = await call<SessionInfo>(`/sessions/${sessionRef.current}`);
         if (detail) {
-          sceneRef.current = detail.scene;
-          log(`다음 장면 ${detail.scene.sceneOrder} ${detail.scene.characterName}`);
+          sceneRef.current = detail.currentSceneId;
+          log(`다음 장면 ${detail.currentSceneId}`);
         }
       }
     }
