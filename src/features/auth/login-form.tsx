@@ -2,7 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { login } from '@/features/auth/api';
 import { loginErrorMessage } from '@/features/auth/error-message';
 import { loginSchema, toFieldErrors, type FieldErrors } from '@/features/auth/schema';
@@ -17,7 +17,7 @@ export function LoginForm() {
     onSuccess: () => router.replace('/home'),
   });
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const input = {

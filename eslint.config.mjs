@@ -64,6 +64,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // MSW
     "public/mockServiceWorker.js",
+    // Playwright 번들된 리포트 JS 가 섞여 들어옴
+    "playwright-report/**",
+    "test-results/**",
   ]),
 
   // 전역

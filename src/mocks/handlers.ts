@@ -40,8 +40,10 @@ function ok<T>(data: T, status = 200) {
   return HttpResponse.json(body, { status });
 }
 
+// 실백엔드 에러 응답과 형태를 맞춘다: 메시지에 코드를 섞지 않는다.
+// code 는 백엔드가 아직 내려주지 않지만, 추가될 때를 대비해 필드로만 둔다
 function fail(status: number, code: string, message: string) {
-  const body: ApiEnvelope<null> = { success: false, data: null, message: `[${code}] ${message}`, code };
+  const body: ApiEnvelope<null> = { success: false, data: null, message, code };
   return HttpResponse.json(body, { status });
 }
 
@@ -59,9 +61,14 @@ interface MockUser {
   name: string;
 }
 
-const users = new Map<string, MockUser>([
-  ['demo@goodquestion.dev', { parentId: 1, email: 'demo@goodquestion.dev', password: 'demo1234!', name: '데모 보호자' }],
-]);
+const SEED_USER: MockUser = {
+  parentId: 1,
+  email: 'demo@goodquestion.dev',
+  password: 'demo1234!',
+  name: '데모 보호자',
+};
+
+const users = new Map<string, MockUser>([[SEED_USER.email, SEED_USER]]);
 let nextParentId = 2;
 let validRefreshToken = '';
 let refreshRecovered = false; // expired-token 시나리오에서 refresh 성공 여부
@@ -89,16 +96,33 @@ function requireAuth(request: Request) {
 
 // 실백엔드와 동일한 형태: 요청은 age, 응답은 birthYear + 서버가 계산한 age
 const CURRENT_YEAR = 2026;
-const children: Child[] = [
-  {
-    childId: 1,
-    name: MOCK_CHILD_NAME,
-    birthYear: 2019,
-    age: CURRENT_YEAR - 2019,
-    createdAt: '2026-08-08T09:00:00',
-  },
-];
+const seedChild = (): Child => ({
+  childId: 1,
+  name: MOCK_CHILD_NAME,
+  birthYear: 2019,
+  age: CURRENT_YEAR - 2019,
+  createdAt: '2026-08-08T09:00:00',
+});
+
+let children: Child[] = [seedChild()];
 let nextChildId = 2;
+
+/** 인증·아이 상태를 시드로 되돌린다. 테스트 간 격리에 쓴다. */
+export function resetApiState(): void {
+  users.clear();
+  users.set(SEED_USER.email, { ...SEED_USER });
+  nextParentId = 2;
+  validRefreshToken = '';
+  refreshRecovered = false;
+  children = [seedChild()];
+  nextChildId = 2;
+}
+
+/** 아이 미등록 상태를 만든다(등록 화면 확인용). */
+export function clearChildren(): void {
+  children = [];
+  nextChildId = 2;
+}
 
 export const handlers = [
   // ---------- 인증 (김현정 확정 계약) ----------
@@ -142,8 +166,9 @@ export const handlers = [
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
+    // MVP 1명 제한. 실백엔드가 409가 아니라 400을 준다
     if (children.length >= 1) {
-      return fail(409, 'CHILD_003', '등록 가능한 아이 수를 초과했습니다.'); // MVP 1명 제한
+      return fail(400, 'CHILD_003', '등록 가능한 아이 수를 초과했습니다.');
     }
     const body = (await request.json()) as ChildUpsertRequest;
     const child: Child = {
