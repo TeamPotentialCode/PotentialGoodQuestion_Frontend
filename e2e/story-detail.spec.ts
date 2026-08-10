@@ -50,7 +50,8 @@ test('시작하기를 누르면 세션이 만들어지고 플레이 화면으로
   await page.waitForURL(/\/play\/\d+$/);
 
   await expect(page.getByRole('heading', { name: '방귀 뀌는 며느리' })).toBeVisible();
-  await expect(page.getByText('여기에 대화 화면이 들어옵니다.')).toBeVisible();
+  // 대화 화면은 오디오 잠금 해제를 기다린다
+  await expect(page.getByRole('button', { name: '이야기 시작하기' })).toBeVisible();
 });
 
 test('이미 진행 중이면 시작하기 대신 이어하기를 보여준다', async ({ page }) => {

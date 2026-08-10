@@ -16,6 +16,7 @@ import type {
   UtteranceRequest,
 } from '@/core/api/types';
 import {
+  ALL_SCENES,
   MOCK_STORY_DETAIL,
   MOCK_STORY,
   POST_KEYWORDS,
@@ -271,6 +272,16 @@ export const handlers = [
     const denied = requireAuth(request);
     if (denied) return denied;
     return ok(MOCK_STORY_DETAIL);
+  }),
+
+  // 장면 조회 — 실백엔드처럼 sceneId(PK)로만 가능하고 목록 API는 없다
+  http.get(api('/stories/:storyId/scenes/:sceneId'), async ({ request, params }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const scene = ALL_SCENES.find((s) => s.sceneId === Number(params.sceneId));
+    if (!scene) return fail(404, 'SCENE_001', '장면을 찾을 수 없습니다.');
+    return ok(scene);
   }),
 
   http.post(api('/stories/:storyId/sessions'), async ({ request, params }) => {

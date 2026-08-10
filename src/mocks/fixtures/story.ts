@@ -3,6 +3,7 @@
 // 씬 구성·requiredElements·maxTurns는 팀 공지(team-notice-20260808) 값 그대로.
 import type {
   NarrationItem,
+  SceneInfo,
   StoryDetail,
   StorySummary,
   ThinkingElement,
@@ -109,6 +110,32 @@ export const DIALOGUE_SCENES: MockDialogueScene[] = [
     hasMission: true,
   },
 ];
+
+/**
+ * 실백엔드 `GET /api/stories/{storyId}/scenes/{sceneId}` 와 같은 형태의 장면 9건.
+ * 내레이션 장면은 characterName·characterOpening 이 null 이다.
+ * DIALOGUE_SCENES 의 내레이션·대화를 sceneOrder 순으로 펼쳐서 만든다.
+ */
+export const ALL_SCENES: SceneInfo[] = DIALOGUE_SCENES.flatMap((scene) => [
+  ...scene.narration.map((item) => ({
+    sceneId: item.sceneId,
+    storyId: MOCK_STORY.storyId,
+    sceneOrder: item.sceneOrder,
+    imageUrl: item.imageUrl,
+    sceneDescription: item.text,
+    characterName: null,
+    characterOpening: null,
+  })),
+  {
+    sceneId: scene.sceneId,
+    storyId: MOCK_STORY.storyId,
+    sceneOrder: scene.sceneOrder,
+    imageUrl: `/mock-assets/scene-${scene.sceneOrder}.png`,
+    sceneDescription: `${scene.characterName}와(과) 이야기를 나누는 장면입니다.`,
+    characterName: scene.characterName,
+    characterOpening: scene.characterOpening,
+  },
+]).sort((a, b) => a.sceneOrder - b.sceneOrder);
 
 // 발화 텍스트에서 사고 요소를 결정적으로 탐지하기 위한 키워드 테이블.
 // 요소 코드 문자열(REASON 등)을 직접 타이핑해도 탐지된다 (session-store 참조)

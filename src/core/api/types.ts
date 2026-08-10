@@ -119,10 +119,23 @@ export interface SessionInfo {
   completedAt: string | null;
 }
 
-// ---------- 장면 (미확정 — 아직 목 전용) ----------
-// 실백엔드의 장면 조회는 {sceneId, storyId, sceneOrder, imageUrl, sceneDescription,
-// characterName, characterOpening} 7개 필드뿐이고 목록 API도 없다.
-// 아래 형태는 예전 제안안이며 대화 화면 작업에서 정리한다.
+// ---------- 장면 ----------
+// GET /api/stories/{storyId}/scenes/{sceneId} — 딱 이 7개 필드다.
+// characterName 이 null 이면 내레이션 장면이다.
+// maxTurns·characterClosing 은 내려주지 않는다(백엔드에 추가 요청 중).
+// 장면 목록 API 도 아직 없어서 sceneId 를 하나씩 조회해야 한다.
+
+export interface SceneInfo {
+  sceneId: number;
+  storyId: number;
+  sceneOrder: number;
+  imageUrl: string | null;
+  sceneDescription: string;
+  characterName: string | null;
+  characterOpening: string | null;
+}
+
+// ---------- 아래는 예전 제안안 (아직 목 내부 전용) ----------
 
 export interface NarrationItem {
   sceneId: number;
