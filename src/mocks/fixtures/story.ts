@@ -3,36 +3,26 @@
 // 씬 구성·requiredElements·maxTurns는 팀 공지(team-notice-20260808) 값 그대로.
 import type {
   NarrationItem,
-  StoryCard,
   StoryDetail,
+  StorySummary,
   ThinkingElement,
 } from '@/core/api/types';
 
-export const MOCK_STORY: StoryCard = {
-  id: 1,
+export const MOCK_STORY: StorySummary = {
+  storyId: 1,
   title: '방귀 뀌는 며느리',
-  summary: '큰 방귀를 부끄러워하던 며느리가 자신의 다름을 장점으로 바꾸는 이야기',
+  thumbnailUrl: 'https://cdn.example.com/stories/banggui/thumbnail.png',
+  estimatedMinutes: 15,
   difficulty: '보통',
   topics: ['다름', '자기이해', '장점 발견'],
-  estimatedMinutes: 15,
-  thumbnailUrl: '/mock-assets/banggui-thumb.png',
-  status: 'published',
 };
 
-export const MOCK_STORY_DETAIL: Omit<StoryDetail, 'activeSession'> = {
+export const MOCK_STORY_DETAIL: StoryDetail = {
   ...MOCK_STORY,
-  intro: '옛날 옛날, 방귀를 아주 크게 뀌는 며느리가 살았어요.',
+  summary: '큰 방귀를 부끄러워하던 며느리가 자신의 다름을 장점으로 바꾸는 이야기',
+  introduction: '옛날 옛날, 방귀를 아주 크게 뀌는 며느리가 살았어요.',
+  situation: '시댁에서 큰 방귀를 부끄러워하던 며느리의 이야기',
   childRole: '며느리의 고민을 들어주는 친구',
-  sceneCount: 4,
-  postActivity: {
-    cards: [
-      { id: 1, text: '며느리가 방귀를 참으며 점점 야위어 갔어요.', imageUrl: '/mock-assets/card-1.png' },
-      { id: 2, text: '며느리가 큰 방귀를 뀌자 집이 흔들렸어요.', imageUrl: '/mock-assets/card-2.png' },
-      { id: 3, text: '며느리는 방귀로 배를 떨어뜨려 사람들을 도왔어요.', imageUrl: '/mock-assets/card-3.png' },
-      { id: 4, text: '모두가 며느리의 방귀를 자랑스러워했어요.', imageUrl: '/mock-assets/card-4.png' },
-    ],
-    keywordCount: 4,
-  },
 };
 
 export const POST_ORDER_ANSWER = [1, 2, 3, 4];

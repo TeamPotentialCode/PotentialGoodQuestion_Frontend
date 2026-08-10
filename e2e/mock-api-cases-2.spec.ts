@@ -147,33 +147,32 @@ test('회원가입 정상 흐름: 201로 토큰 발급, 새 계정으로 로그�
   expect(relogin.body.data.parentId).toBe(signed.body.data.parentId);
 });
 
-test('홈 inProgress 생애주기: 없음 → 진행 중 표시 → 완주 후 다시 없음', async ({ page }) => {
+test('홈 continueSession 생애주기: 없음 → 진행 중 표시 → 완주 후 다시 없음', async ({ page }) => {
   test.setTimeout(60_000);
   await ready(page);
   const { accessToken } = await login(page);
   const auth = { Authorization: `Bearer ${accessToken}` };
 
-  const empty = await api(page, '/home', { headers: auth });
-  expect(empty.body.data.inProgress).toBeNull();
-  expect(empty.body.data.recommended).toHaveLength(1);
+  const empty = await api(page, '/home?childId=1', { headers: auth });
+  expect(empty.body.data.continueSession).toBeNull();
+  expect(empty.body.data.recommendedStories).toHaveLength(1);
 
   const created = await api(page, '/stories/1/sessions', json({ childId: 1 }, accessToken));
   const sessionId = created.body.data.sessionId;
 
-  const during = await api(page, '/home', { headers: auth });
-  expect(during.body.data.inProgress.sessionId).toBe(sessionId);
-  expect(during.body.data.inProgress.currentSceneOrder).toBe(3);
-  expect(during.body.data.inProgress.totalScenes).toBe(4);
+  const during = await api(page, '/home?childId=1', { headers: auth });
+  expect(during.body.data.continueSession.sessionId).toBe(sessionId);
+  expect(during.body.data.continueSession.currentSceneOrder).toBe(3);
+  expect(during.body.data.continueSession.status).toBe('IN_PROGRESS');
 
+  // 이야기 상세는 실백엔드와 같이 세션 정보를 포함하지 않는다
   const detail = await api(page, '/stories/1', { headers: auth });
-  expect(detail.body.data.activeSession.sessionId).toBe(sessionId);
+  expect(detail.body.data.storyId).toBe(1);
 
   for (const maxTurns of [4, 5, 5, 4]) await burnScene(page, accessToken, sessionId, maxTurns);
 
-  const done = await api(page, '/home', { headers: auth });
-  expect(done.body.data.inProgress).toBeNull();
-  const detailAfter = await api(page, '/stories/1', { headers: auth });
-  expect(detailAfter.body.data.activeSession).toBeNull();
+  const done = await api(page, '/home?childId=1', { headers: auth });
+  expect(done.body.data.continueSession).toBeNull();
 });
 
 test('세션 재사용: 진행 중 세션이 있으면 새로 만들지 않고 그대로 반환', async ({ page }) => {

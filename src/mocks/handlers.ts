@@ -7,11 +7,11 @@ import type {
   AuthTokens,
   Child,
   ChildUpsertRequest,
+  HomeData,
   LoginRequest,
   PostOrderRequest,
   PostRetellingRequest,
   SignupRequest,
-  StoryDetail,
   UtteranceRequest,
 } from '@/core/api/types';
 import {
@@ -200,20 +200,28 @@ export const handlers = [
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
+    // 실백엔드는 childId 를 필수 쿼리 파라미터로 요구한다
+    const childId = new URL(request.url).searchParams.get('childId');
+    if (!childId) return fail(400, 'HOME_001', '아이 ID는 필수입니다.');
+
     const session = activeSession();
-    return ok({
-      inProgress: session
+    const scene = session ? buildScenePayload(session) : null;
+    const home: HomeData = {
+      continueSession: session
         ? {
             sessionId: session.sessionId,
             storyId: session.storyId,
             storyTitle: MOCK_STORY.title,
             thumbnailUrl: MOCK_STORY.thumbnailUrl,
-            currentSceneOrder: buildScenePayload(session).sceneOrder,
-            totalScenes: 4,
+            currentSceneId: scene?.sceneId ?? null,
+            currentSceneOrder: scene?.sceneOrder ?? null,
+            status: 'IN_PROGRESS',
+            lastActivityAt: '2026-08-10T10:00:00',
           }
         : null,
-      recommended: [MOCK_STORY],
-    });
+      recommendedStories: [MOCK_STORY],
+    };
+    return ok(home);
   }),
 
   // ---------- 이야기 ----------
@@ -230,12 +238,7 @@ export const handlers = [
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
-    const session = activeSession();
-    const detail: StoryDetail = {
-      ...MOCK_STORY_DETAIL,
-      activeSession: session ? { sessionId: session.sessionId } : null,
-    };
-    return ok(detail);
+    return ok(MOCK_STORY_DETAIL);
   }),
 
   http.post(api('/stories/:storyId/sessions'), async ({ request, params }) => {

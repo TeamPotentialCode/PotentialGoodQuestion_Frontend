@@ -64,45 +64,43 @@ export interface ChildUpsertRequest {
   age: number;
 }
 
-// ---------- 이야기 ----------
+// ---------- 이야기 (실측 확정) ----------
+// thumbnailUrl 은 시드에 실재하지 않는 더미 주소가 들어 있어 아직 렌더하지 않는다
 
-export interface StoryCard {
-  id: number;
+export interface StorySummary {
+  storyId: number;
   title: string;
-  summary: string;
+  thumbnailUrl: string;
+  estimatedMinutes: number;
   difficulty: string;
   topics: string[];
-  estimatedMinutes: number;
-  thumbnailUrl: string;
-  status: string;
 }
 
-export interface PostActivityCard {
-  id: number;
-  text: string;
-  imageUrl: string;
-}
-
-export interface StoryDetail extends StoryCard {
-  intro: string;
+export interface StoryDetail extends StorySummary {
+  summary: string;
+  introduction: string;
+  situation: string;
   childRole: string;
-  sceneCount: number;
-  activeSession: { sessionId: number } | null;
-  postActivity: { cards: PostActivityCard[]; keywordCount: number };
 }
 
-// ---------- 홈 ----------
+// ---------- 홈 (실측 확정) ----------
+
+export interface ContinueSession {
+  sessionId: number;
+  storyId: number;
+  storyTitle: string;
+  thumbnailUrl: string;
+  currentSceneId: number | null;
+  currentSceneOrder: number | null;
+  status: SessionStatus;
+  lastActivityAt: string;
+}
 
 export interface HomeData {
-  inProgress: {
-    sessionId: number;
-    storyId: number;
-    storyTitle: string;
-    thumbnailUrl: string;
-    currentSceneOrder: number;
-    totalScenes: number;
-  } | null;
-  recommended: StoryCard[];
+  // 가장 최근 IN_PROGRESS 세션 1건. 없으면 null (배열이 아니다)
+  continueSession: ContinueSession | null;
+  // published 상위 3건 고정 — 서버에 추천 로직은 아직 없다
+  recommendedStories: StorySummary[];
 }
 
 // ---------- 장면·세션 ----------

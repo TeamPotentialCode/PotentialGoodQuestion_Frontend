@@ -217,14 +217,14 @@ test('expired-token: 보호 라우트 401 → refresh 성공 → 다시 접근 �
   const auth = { Authorization: `Bearer ${accessToken}` };
   await page.evaluate(() => window.__gqMock?.setScenario('expired-token'));
 
-  const denied = await api(page, '/home', { headers: auth });
+  const denied = await api(page, '/home?childId=1', { headers: auth });
   expect(denied.status).toBe(401);
   expect(denied.body.code).toBe('AUTH_005');
 
   const refreshed = await api(page, '/auth/refresh', json({ refreshToken }));
   expect(refreshed.status).toBe(200);
 
-  const allowed = await api(page, '/home', {
+  const allowed = await api(page, '/home?childId=1', {
     headers: { Authorization: `Bearer ${refreshed.body.data.accessToken}` },
   });
   expect(allowed.status).toBe(200);
