@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# 템플릿은 팀 공유용이라 커밋한다 (비밀값 없음)
+!.env.example
 
 # vercel
 .vercel

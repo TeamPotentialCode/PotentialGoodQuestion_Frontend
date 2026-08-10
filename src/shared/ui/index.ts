@@ -4,4 +4,5 @@ export { Character } from '@/shared/ui/character';
 export { SpeechBubble } from '@/shared/ui/speech-bubble';
 export { TouchTarget } from '@/shared/ui/touch-target';
 export { Stack } from '@/shared/ui/stack';
+export { Field } from '@/shared/ui/field';
 export { RotateHint } from '@/shared/ui/rotate-hint';

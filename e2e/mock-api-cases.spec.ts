@@ -88,7 +88,7 @@ test('아이 프로필: 시드 1명 조회, 추가는 MVP 제한 409, 수정은 
   expect(list.body.data).toHaveLength(1);
   expect(list.body.data[0].name).toBe('문열');
 
-  const over = await api(page, '/children', json({ name: '둘째', birthYear: 2020, avatarKey: 'bear' }, accessToken));
+  const over = await api(page, '/children', json({ name: '둘째', age: 6 }, accessToken));
   expect(over.status).toBe(409);
   expect(over.body.code).toBe('CHILD_003');
 

@@ -2,7 +2,11 @@
 // 확정 계약: 인증, utterances·stt·tts·reports
 // 나머지(home/stories/sessions/사후활동)는 백엔드 확정 시 여기만 수정한다.
 
-// 공통 응답 봉투. code 위치는 미확정 — 백엔드가 메시지에 넣으면 code는 undefined로 온다
+// 공통 응답 봉투.
+// 에러 응답도 같은 봉투이고 code 필드는 오지 않는다.
+//   401 { success:false, message:"인증이 필요합니다.", data:null }
+//   409 { success:false, message:"이미 사용 중인 이메일입니다.", data:null }
+// 따라서 화면은 code가 아니라 HTTP 상태로 분기해야 한다. code는 향후 대비용 optional
 export interface ApiEnvelope<T> {
   success: boolean;
   data: T | null;
@@ -46,12 +50,18 @@ export interface AuthTokens {
 }
 
 // ---------- 아이 프로필 ----------
-
+// 응답은 birthYear와 age를 둘 다 준다(age는 서버가 계산). 요청은 age로 보낸다
 export interface Child {
-  id: number;
+  childId: number;
   name: string;
   birthYear: number;
-  avatarKey: string;
+  age: number;
+  createdAt: string;
+}
+
+export interface ChildUpsertRequest {
+  name: string;
+  age: number;
 }
 
 // ---------- 이야기 ----------

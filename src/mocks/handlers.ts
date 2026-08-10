@@ -6,6 +6,7 @@ import type {
   ApiEnvelope,
   AuthTokens,
   Child,
+  ChildUpsertRequest,
   LoginRequest,
   PostOrderRequest,
   PostRetellingRequest,
@@ -86,7 +87,17 @@ function requireAuth(request: Request) {
   return null;
 }
 
-const children: Child[] = [{ id: 1, name: MOCK_CHILD_NAME, birthYear: 2019, avatarKey: 'rabbit' }];
+// 실백엔드와 동일한 형태: 요청은 age, 응답은 birthYear + 서버가 계산한 age
+const CURRENT_YEAR = 2026;
+const children: Child[] = [
+  {
+    childId: 1,
+    name: MOCK_CHILD_NAME,
+    birthYear: 2019,
+    age: CURRENT_YEAR - 2019,
+    createdAt: '2026-08-08T09:00:00',
+  },
+];
 let nextChildId = 2;
 
 export const handlers = [
@@ -134,8 +145,14 @@ export const handlers = [
     if (children.length >= 1) {
       return fail(409, 'CHILD_003', '등록 가능한 아이 수를 초과했습니다.'); // MVP 1명 제한
     }
-    const body = (await request.json()) as Omit<Child, 'id'>;
-    const child: Child = { id: nextChildId++, ...body };
+    const body = (await request.json()) as ChildUpsertRequest;
+    const child: Child = {
+      childId: nextChildId++,
+      name: body.name,
+      birthYear: CURRENT_YEAR - body.age,
+      age: body.age,
+      createdAt: '2026-08-10T09:00:00',
+    };
     children.push(child);
     return ok(child, 201);
   }),
@@ -144,9 +161,12 @@ export const handlers = [
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
-    const child = children.find((c) => c.id === Number(params.childId));
+    const child = children.find((c) => c.childId === Number(params.childId));
     if (!child) return fail(404, 'CHILD_001', '아이를 찾을 수 없습니다.');
-    Object.assign(child, await request.json());
+    const body = (await request.json()) as ChildUpsertRequest;
+    child.name = body.name;
+    child.age = body.age;
+    child.birthYear = CURRENT_YEAR - body.age;
     return ok(child);
   }),
 
