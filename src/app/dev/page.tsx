@@ -5,9 +5,10 @@
 import { notFound } from 'next/navigation';
 import { useRef, useState } from 'react';
 import type {
+  ActivityCardSet,
+  ActivityResult,
   ApiEnvelope,
   AuthTokens,
-  PostOrderData,
   ReportData,
   SessionInfo,
   SttData,
@@ -139,20 +140,25 @@ function DevConsole() {
 
   const postActivity = async () => {
     if (!sessionRef.current) return;
-    const wrong = await call<PostOrderData>(`/sessions/${sessionRef.current}/post/order`, {
+    const set = await call<ActivityCardSet>(`/sessions/${sessionRef.current}/activity`, {
       method: 'POST',
-      body: JSON.stringify({ cardOrder: [2, 1, 3, 4] }),
+      body: '{}',
     });
-    log(`오답 시도 → correct ${wrong?.correct}, keywords [${wrong?.keywords.join(',')}]`);
-    const right = await call<PostOrderData>(`/sessions/${sessionRef.current}/post/order`, {
-      method: 'POST',
-      body: JSON.stringify({ cardOrder: [1, 2, 3, 4] }),
-    });
-    log(`정답 시도 → correct ${right?.correct}, keywords [${right?.keywords.join(',')}]`);
-    await call(`/sessions/${sessionRef.current}/post/retelling`, {
-      method: 'POST',
-      body: JSON.stringify({ text: '며느리가 방귀를 참다가…', sttRawText: '며느리가 방귀를 참다가…' }),
-    });
+    log(`카드 ${set?.cards.length}장: [${set?.cards.map((c) => c.text.slice(0, 6)).join(' / ')}]`);
+
+    const answer = ['card_1', 'card_2', 'card_3', 'card_4', 'card_5'];
+    const submit = (submittedOrder: string[], reconstructionText?: string) =>
+      call<ActivityResult>(`/sessions/${sessionRef.current}/activity`, {
+        method: 'PATCH',
+        body: JSON.stringify({ submittedOrder, reconstructionText }),
+      });
+
+    const wrong = await submit(['card_2', 'card_1', 'card_3', 'card_4', 'card_5']);
+    log(`오답 시도 → correct ${wrong?.orderCorrect}, keywords [${wrong?.retellingKeywords.join(',')}]`);
+    const right = await submit(answer);
+    log(`정답 시도 → correct ${right?.orderCorrect}, keywords [${right?.retellingKeywords.join(',')}]`);
+    const done = await submit(answer, '며느리가 방귀를 참다가…');
+    log(`재구성 저장 → completed ${done?.completed}`);
   };
 
   const report = async () => {
@@ -160,8 +166,10 @@ function DevConsole() {
     const data = await call<ReportData>(`/reports/${sessionRef.current}`);
     if (data) {
       const s = data.elementSummary;
+      const pct = (c: { detected: unknown[]; total: number }) =>
+        c.total === 0 ? 0 : Math.round((c.detected.length / c.total) * 100);
       log(
-        `리포트: 달성률 ${s.achievementRate}% | 논리 ${s.logic} 공감 ${s.empathy} 관점 ${s.perspective} | 장면 ${data.scenes.length}개`,
+        `리포트: 달성률 ${Math.round(s.achievementRate * 100)}% | 논리 ${pct(s.logic)}% 공감 ${pct(s.empathy)}% 관점 ${pct(s.perspective)}% | 장면 ${data.scenes.length}개`,
       );
     }
   };

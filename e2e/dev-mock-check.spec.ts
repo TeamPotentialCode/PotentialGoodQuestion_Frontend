@@ -23,8 +23,10 @@ test('목 콘솔로 4개 장면을 완주하고 사후활동·리포트까지 �
   await expect(log).toContainText('이야기 완료!');
 
   await page.getByRole('button', { name: '사후 활동' }).click();
+  await expect(log).toContainText('카드 5장');
   await expect(log).toContainText('오답 시도 → correct false, keywords []');
-  await expect(log).toContainText('정답 시도 → correct true, keywords [방귀,며느리,참다,시원하다]');
+  await expect(log).toContainText('정답 시도 → correct true, keywords [며느리,방귀,배나무,마을,특별한 힘]');
+  await expect(log).toContainText('재구성 저장 → completed true');
 
   await page.getByRole('button', { name: '리포트' }).click();
   await expect(log).toContainText('리포트: 달성률');

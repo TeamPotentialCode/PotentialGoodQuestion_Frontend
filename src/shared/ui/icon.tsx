@@ -1,7 +1,7 @@
 import type { SVGProps } from 'react';
 import { cn } from '@/shared/ui/cn';
 
-type IconName = 'wave' | 'speaker' | 'image' | 'person' | 'close' | 'mic';
+type IconName = 'wave' | 'speaker' | 'image' | 'person' | 'close' | 'mic' | 'grip' | 'check';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;
@@ -61,6 +61,19 @@ const paths: Record<IconName, React.ReactNode> = {
       <rect x="9" y="2.5" width="6" height="11" rx="3" />
       <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
       <path d="M12 17.5V21" />
+    </>
+  ),
+  // 드래그 손잡이 — 카드를 잡아 옮길 수 있다는 표시
+  grip: (
+    <>
+      <path d="M6 10h12" />
+      <path d="M6 14h12" />
+    </>
+  ),
+  check: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12 3 3 5-6" />
     </>
   ),
   close: (

@@ -213,16 +213,24 @@ export interface SttData {
 
 // ---------- 리포트 ----------
 
+/** 카테고리별 탐지 현황. 비율은 화면에서 계산한다 (백엔드 record 의 rate() 는 JSON 에 없다) */
+export interface CategoryScore {
+  detected: ThinkingElement[];
+  total: number;
+}
+
 export interface ReportData {
   sessionId: number;
   storyTitle: string;
   completedAt: string;
   elementSummary: {
     accumulated: ThinkingElement[];
+    totalRequired: number;
+    /** 0~1 비율 (백분율이 아니다) */
     achievementRate: number;
-    logic: number;
-    empathy: number;
-    perspective: number;
+    logic: CategoryScore;
+    empathy: CategoryScore;
+    perspective: CategoryScore;
   };
   scenes: {
     sceneOrder: number;
@@ -245,20 +253,36 @@ export interface ReportData {
 
 // ---------- 말하기 후 활동 ----------
 
-export interface PostOrderRequest {
-  cardOrder: number[];
-}
-
-export interface PostOrderData {
-  correct: boolean;
-  keywords: string[];
-}
-
-export interface PostRetellingRequest {
+/** 카드 id(card_1 …)는 정답 순서를 그대로 담고 있다 — 화면에 노출하지 않는다 */
+export interface ActivityCard {
+  id: string;
   text: string;
-  sttRawText: string;
 }
 
-export interface PostRetellingData {
+/** POST /sessions/{id}/activity — 서버가 섞은 카드를 준다 */
+export interface ActivityCardSet {
+  activityId: number;
+  sessionId: number;
+  cards: ActivityCard[];
+}
+
+/** PATCH /sessions/{id}/activity — submittedOrder 는 다시 말하기 제출 때도 함께 보낸다 */
+export interface ActivitySubmitRequest {
+  submittedOrder: string[];
+  reconstructionText?: string;
+}
+
+export interface ActivityResult {
+  activityId: number;
+  sessionId: number;
+  orderCorrect: boolean;
+  /** 정답일 때만 채워진다. 오답이면 빈 배열 */
+  retellingKeywords: string[];
+  reconstructionText: string | null;
+  /**
+   * 주의: 첫 PATCH(순서 제출)에서 이미 true 가 된다.
+   * "다시 말하기까지 끝났다"는 신호로 쓰면 안 된다 — 화면은 orderCorrect 로 판단한다
+   */
   completed: boolean;
+  completedAt: string | null;
 }

@@ -3,6 +3,9 @@
 // 브라우저(상대 경로)와 노드(절대 경로) 양쪽에서 동작한다.
 import { delay, http, HttpResponse } from 'msw';
 import type {
+  ActivityCardSet,
+  ActivityResult,
+  ActivitySubmitRequest,
   ApiEnvelope,
   AuthTokens,
   Child,
@@ -10,17 +13,17 @@ import type {
   HomeData,
   LoginRequest,
   SessionInfo,
-  PostOrderRequest,
-  PostRetellingRequest,
   SignupRequest,
   UtteranceRequest,
 } from '@/core/api/types';
 import {
+  ACTIVITY_CARDS,
+  ACTIVITY_ORDER_ANSWER,
+  ACTIVITY_SHUFFLED_ORDER,
   ALL_SCENES,
   MOCK_STORY_DETAIL,
   MOCK_STORY,
-  POST_KEYWORDS,
-  POST_ORDER_ANSWER,
+  RETELLING_KEYWORDS,
 } from '@/mocks/fixtures/story';
 import { silentMp3 } from '@/mocks/fixtures/silent-audio';
 import { consumeScenario, getScenario } from '@/mocks/scenario';
@@ -361,23 +364,43 @@ export const handlers = [
   }),
 
   // ---------- 말하기 후 활동 ----------
-  http.post(api('/sessions/:sessionId/post/order'), async ({ request }) => {
+  // 시작: 카드를 섞어서 준다. 실백엔드는 무작위지만 목은 고정 순서다(E2E 가 결정적이어야 한다)
+  http.post(api('/sessions/:sessionId/activity'), async ({ request, params }) => {
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
-    const body = (await request.json()) as PostOrderRequest;
-    const correct =
-      body.cardOrder.length === POST_ORDER_ANSWER.length &&
-      body.cardOrder.every((id, i) => id === POST_ORDER_ANSWER[i]);
-    // FR-17: 정답 전에는 핵심 단어를 노출하지 않는다
-    return ok({ correct, keywords: correct ? POST_KEYWORDS : [] });
+    const sessionId = Number(params.sessionId);
+    if (!getSession(sessionId)) return fail(404, 'SESSION_001', '세션을 찾을 수 없습니다.');
+
+    const cards = ACTIVITY_SHUFFLED_ORDER.map(
+      (id) => ACTIVITY_CARDS.find((card) => card.id === id)!,
+    );
+    return ok<ActivityCardSet>({ activityId: sessionId, sessionId, cards });
   }),
 
-  http.post(api('/sessions/:sessionId/post/retelling'), async ({ request }) => {
+  // 제출: 순서 채점 + (선택) 재구성 텍스트 저장.
+  // 실백엔드는 첫 제출에서 completed 를 true 로 만든다 — 그대로 흉내낸다
+  http.patch(api('/sessions/:sessionId/activity'), async ({ request, params }) => {
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
-    (await request.json()) as PostRetellingRequest;
-    return ok({ completed: true });
+    const sessionId = Number(params.sessionId);
+    if (!getSession(sessionId)) return fail(404, 'SESSION_001', '세션을 찾을 수 없습니다.');
+
+    const body = (await request.json()) as ActivitySubmitRequest;
+    const orderCorrect =
+      body.submittedOrder.length === ACTIVITY_ORDER_ANSWER.length &&
+      body.submittedOrder.every((id, i) => id === ACTIVITY_ORDER_ANSWER[i]);
+
+    return ok<ActivityResult>({
+      activityId: sessionId,
+      sessionId,
+      orderCorrect,
+      // 정답 전에는 핵심 단어를 노출하지 않는다
+      retellingKeywords: orderCorrect ? RETELLING_KEYWORDS : [],
+      reconstructionText: body.reconstructionText ?? null,
+      completed: true,
+      completedAt: '2026-08-11T12:00:00Z',
+    });
   }),
 ];

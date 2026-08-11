@@ -241,17 +241,39 @@ test('showMission: 씬7은 2턴 경과·SOLUTION 조건, 씬9는 EMOTION/PERSPEC
   expect(s9b.body.data.showMission).toBe(true);
 });
 
-test('retelling: 재구성 저장 후 completed true', async ({ page }) => {
+test('사후 활동: 카드는 섞여 오고, 정답일 때만 핵심 단어가 온다', async ({ page }) => {
   await ready(page);
   const { accessToken } = await login(page);
   const created = await api(page, '/stories/1/sessions', json({ childId: 1 }, accessToken));
-  const res = await api(
-    page,
-    `/sessions/${created.body.data.sessionId}/post/retelling`,
-    json({ text: '며느리가 방귀를 참다가 말했어요.', sttRawText: '' }, accessToken),
-  );
-  expect(res.status).toBe(200);
-  expect(res.body.data.completed).toBe(true);
+  const sessionId = created.body.data.sessionId;
+
+  const set = await api(page, `/sessions/${sessionId}/activity`, json({}, accessToken));
+  expect(set.status).toBe(200);
+  const ids = set.body.data.cards.map((c: { id: string }) => c.id);
+  expect(ids).toHaveLength(5);
+  // 섞여서 온다 — 정답 순서 그대로 오면 활동이 성립하지 않는다
+  expect(ids).not.toEqual(['card_1', 'card_2', 'card_3', 'card_4', 'card_5']);
+  // id 는 정답을 담고 있으므로 화면이 아니라 여기서만 쓴다
+  expect([...ids].sort()).toEqual(['card_1', 'card_2', 'card_3', 'card_4', 'card_5']);
+
+  const patch = (body: Record<string, unknown>) =>
+    api(page, `/sessions/${sessionId}/activity`, {
+      ...json(body, accessToken),
+      method: 'PATCH',
+    });
+
+  const wrong = await patch({ submittedOrder: ['card_2', 'card_1', 'card_3', 'card_4', 'card_5'] });
+  expect(wrong.body.data.orderCorrect).toBe(false);
+  expect(wrong.body.data.retellingKeywords).toEqual([]);
+
+  const answer = ['card_1', 'card_2', 'card_3', 'card_4', 'card_5'];
+  const right = await patch({ submittedOrder: answer });
+  expect(right.body.data.orderCorrect).toBe(true);
+  expect(right.body.data.retellingKeywords).toHaveLength(5);
+
+  const retold = await patch({ submittedOrder: answer, reconstructionText: '며느리가 방귀를…' });
+  expect(retold.body.data.reconstructionText).toBe('며느리가 방귀를…');
+  expect(retold.body.data.completed).toBe(true);
 });
 
 test('터치 타겟 실측: 일반 48px 이상, 녹음 CTA 72px 이상', async ({ page }) => {

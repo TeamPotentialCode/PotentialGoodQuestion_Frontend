@@ -51,6 +51,55 @@ let nextMessageId = 1;
 const sessions = new Map<number, MockSession>();
 const idempotencyCache = new Map<string, UtteranceData>();
 
+/*
+ * MSW 는 페이지 안에서 돌기 때문에 새로고침하면 이 모듈이 통째로 다시 로드된다.
+ * 세션을 메모리에만 두면 새로고침 한 번에 진행 중인 이야기가 사라져서
+ * 실백엔드와 다르게 동작한다 — localStorage 에 실어 나른다.
+ * accumulated 는 Set 이라 배열로 바꿔 저장한다.
+ */
+const STORE_KEY = 'gq:msw:sessions';
+
+type StoredSession = Omit<MockSession, 'accumulated'> & { accumulated: ThinkingElement[] };
+
+function persist(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const payload = {
+      nextSessionId,
+      nextMessageId,
+      sessions: [...sessions.values()].map<StoredSession>((s) => ({
+        ...s,
+        accumulated: [...s.accumulated],
+      })),
+    };
+    localStorage.setItem(STORE_KEY, JSON.stringify(payload));
+  } catch {
+    // 저장이 막혀 있으면 메모리로만 동작한다 (노드 테스트 등)
+  }
+}
+
+function restore(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const payload = JSON.parse(raw) as {
+      nextSessionId: number;
+      nextMessageId: number;
+      sessions: StoredSession[];
+    };
+    nextSessionId = payload.nextSessionId;
+    nextMessageId = payload.nextMessageId;
+    for (const s of payload.sessions) {
+      sessions.set(s.sessionId, { ...s, accumulated: new Set(s.accumulated) });
+    }
+  } catch {
+    localStorage.removeItem(STORE_KEY);
+  }
+}
+
+restore();
+
 function currentScene(session: MockSession): MockDialogueScene {
   return DIALOGUE_SCENES[Math.min(session.sceneIndex, DIALOGUE_SCENES.length - 1)];
 }
@@ -80,6 +129,7 @@ export function createSession(
     perSceneResults: [],
   };
   sessions.set(session.sessionId, session);
+  persist();
   return { sessionId: session.sessionId, scene: buildScenePayload(session), reused: false };
 }
 
@@ -258,6 +308,7 @@ export function submitUtterance(
     showMission,
   };
   if (idempotencyKey) idempotencyCache.set(idempotencyKey, result);
+  persist(); // 턴 진행 상황도 새로고침을 견뎌야 한다
   return result;
 }
 
@@ -283,8 +334,11 @@ export function buildReport(sessionId: number): ReportData | null {
   const allDetected = session.perSceneResults.flatMap((r) => r.detectedElements);
   const accumulated = [...new Set(allDetected)];
   const totalRequired = DIALOGUE_SCENES.reduce((n, s) => n + s.requiredElements.length, 0);
-  const score = (elements: ThinkingElement[]) =>
-    Math.min(100, Math.round((allDetected.filter((e) => elements.includes(e)).length / 4) * 100));
+  // 실백엔드는 카테고리별로 탐지된 요소 목록과 총 개수를 준다 (비율은 화면에서 계산한다)
+  const score = (elements: ThinkingElement[]) => ({
+    detected: [...new Set(allDetected.filter((e) => elements.includes(e)))],
+    total: elements.length,
+  });
 
   const childUtterances = session.messages.filter((m) => m.speakerType === 'CHILD');
   return {
@@ -293,7 +347,9 @@ export function buildReport(sessionId: number): ReportData | null {
     completedAt: '2026-08-08T12:00:00Z',
     elementSummary: {
       accumulated,
-      achievementRate: Math.round((allDetected.length / totalRequired) * 100),
+      totalRequired,
+      // 실백엔드와 같이 0~1 비율로 준다 (백분율이 아니다)
+      achievementRate: totalRequired === 0 ? 0 : accumulated.length / totalRequired,
       logic: score(CATEGORY.logic),
       empathy: score(CATEGORY.empathy),
       perspective: score(CATEGORY.perspective),
@@ -319,4 +375,5 @@ export function resetMockState(): void {
   idempotencyCache.clear();
   nextSessionId = 1;
   nextMessageId = 1;
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(STORE_KEY);
 }

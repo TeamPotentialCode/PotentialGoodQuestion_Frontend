@@ -2,6 +2,7 @@
 // 텍스트는 자체 작성 플레이스홀더 — 테스시드 데이터 확정 시 이 파일의 값만 교체한다.
 // 씬 구성·requiredElements·maxTurns는 팀 공지(team-notice-20260808) 값 그대로.
 import type {
+  ActivityCard,
   NarrationItem,
   SceneInfo,
   StoryDetail,
@@ -26,8 +27,25 @@ export const MOCK_STORY_DETAIL: StoryDetail = {
   childRole: '며느리의 고민을 들어주는 친구',
 };
 
-export const POST_ORDER_ANSWER = [1, 2, 3, 4];
-export const POST_KEYWORDS = ['방귀', '며느리', '참다', '시원하다'];
+// 말하기 후 활동 — 백엔드 시드(stories.post_activity_config)와 같은 값.
+// 카드 id 는 정답 순서를 그대로 담고 있으므로 화면에 내보내면 안 된다
+export const ACTIVITY_CARDS: ActivityCard[] = [
+  { id: 'card_1', text: '며느리가 방귀를 참아 배가 아팠어요.' },
+  { id: 'card_2', text: '참던 방귀가 크게 터져 시아버지가 놀랐어요.' },
+  { id: 'card_3', text: '시아버지가 며느리를 친정에 데려가려 했어요.' },
+  { id: 'card_4', text: '며느리의 방귀로 높은 배를 떨어뜨렸어요.' },
+  { id: 'card_5', text: '시아버지가 사과하고 며느리는 당당해졌어요.' },
+];
+
+export const ACTIVITY_ORDER_ANSWER = ACTIVITY_CARDS.map((card) => card.id);
+
+/**
+ * 실백엔드는 카드를 무작위로 섞지만 목은 **고정 순서**로 준다.
+ * E2E 가 정해진 키 입력으로 정렬할 수 있어야 하기 때문이다. 시안(Story Order)과 같은 배열
+ */
+export const ACTIVITY_SHUFFLED_ORDER = ['card_3', 'card_1', 'card_5', 'card_2', 'card_4'];
+
+export const RETELLING_KEYWORDS = ['며느리', '방귀', '배나무', '마을', '특별한 힘'];
 
 export interface MockDialogueScene {
   sceneId: number;
