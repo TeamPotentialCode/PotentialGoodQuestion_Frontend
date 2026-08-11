@@ -48,6 +48,12 @@ export function PlayControls({ phase, onAction }: PlayControlsProps) {
                 다시 말하기
               </TouchTarget>
             );
+          case 'TAP_NEXT_SCENE':
+            return (
+              <TouchTarget key={type} size="lg" onClick={() => onAction({ type })}>
+                다음 장면 →
+              </TouchTarget>
+            );
           case 'TAP_RETRY':
             return (
               <TouchTarget key={type} size="lg" onClick={() => onAction({ type })}>

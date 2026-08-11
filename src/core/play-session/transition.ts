@@ -35,7 +35,10 @@ export function transition(state: PlayState, event: PlayEvent): PlayState {
       if (phase.tag !== 'loading') return state;
       return { ...state, phase: { tag: 'fatal', message: event.message } };
 
-    case 'NARRATION_SENTENCE_ENDED': {
+    // 오디오가 끝났을 때(NARRATION_SENTENCE_ENDED)와 "다음"을 눌렀을 때(TAP_NEXT) 전이가 같다.
+    // 지금 화면은 TAP_NEXT 만 쓰지만, 자동 진행으로 바꿔도 core 는 그대로다
+    case 'NARRATION_SENTENCE_ENDED':
+    case 'TAP_NEXT': {
       if (phase.tag !== 'narrating' || state.scene === null) return state;
       const next = phase.sentenceIndex + 1;
       return {

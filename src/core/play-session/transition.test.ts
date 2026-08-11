@@ -75,6 +75,21 @@ describe('transition', () => {
     expect(afterSecond.phase).toEqual({ tag: 'speaking', kind: 'opening' });
   });
 
+  it('4-1. TAP_NEXT도 내레이션을 한 문장 넘긴다 (아이가 "다음"을 누르는 경로)', () => {
+    const narrating = run([{ type: 'TAP_UNLOCK' }, { type: 'SCENE_LOADED', scene: scene(2) }]);
+    const afterFirst = transition(narrating, { type: 'TAP_NEXT' });
+    expect(afterFirst.phase).toEqual({ tag: 'narrating', sentenceIndex: 1 });
+    expect(transition(afterFirst, { type: 'TAP_NEXT' }).phase).toEqual({
+      tag: 'speaking',
+      kind: 'opening',
+    });
+  });
+
+  it('4-2. narrating이 아닐 때 TAP_NEXT는 무시된다', () => {
+    const opening = run([{ type: 'TAP_UNLOCK' }, { type: 'SCENE_LOADED', scene: scene(0) }]);
+    expect(transition(opening, { type: 'TAP_NEXT' })).toBe(opening);
+  });
+
   it('5. opening 재생 종료 시 awaitingChild가 된다', () => {
     const opening = run([{ type: 'TAP_UNLOCK' }, { type: 'SCENE_LOADED', scene: scene(0) }]);
     expect(opening.phase).toEqual({ tag: 'speaking', kind: 'opening' });

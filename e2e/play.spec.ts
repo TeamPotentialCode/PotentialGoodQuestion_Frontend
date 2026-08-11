@@ -25,12 +25,63 @@ async function enterPlay(page: Page) {
   await page.waitForURL(/\/play\/\d+$/);
 }
 
-/** 오디오 잠금 해제 → 첫 대사 재생 → 아이 차례 */
+/**
+ * 내레이션이 나오는 동안 "다음"을 눌러 대화 장면까지 넘어간다.
+ * 누른 뒤 data-narration 이 실제로 바뀔 때까지 기다린다 —
+ * 그러지 않으면 마지막 장을 넘긴 직후 사라진 버튼을 다시 누르려다 실패한다
+ */
+async function skipNarration(page: Page) {
+  while ((await stage(page).getAttribute('data-state')) === 'narrating') {
+    const at = (await stage(page).getAttribute('data-narration')) ?? '';
+    await page.getByRole('button', { name: '다음 →' }).click();
+    await expect(stage(page)).not.toHaveAttribute('data-narration', at, { timeout: 20000 });
+  }
+}
+
+/** 오디오 잠금 해제 → 도입 내레이션 → 첫 대사 재생 → 아이 차례 */
 async function unlockAndWaitTurn(page: Page) {
   await expect(stage(page)).toHaveAttribute('data-state', 'locked');
   await page.getByRole('button', { name: '이야기 시작하기' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
+  await skipNarration(page);
   await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild', { timeout: 20000 });
 }
+
+/** 아이 차례 한 번을 완주해 다음 상태까지 간다 */
+async function playOneTurn(page: Page) {
+  await page.getByRole('button', { name: '말하기' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording');
+  await page.waitForTimeout(300);
+  await page.getByRole('button', { name: '보내기' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'reviewing', { timeout: 20000 });
+  await page.getByRole('button', { name: '보내기' }).click();
+}
+
+test('잠금 해제 전 도입 내레이션 2장을 넘긴 뒤 대화가 시작된다', async ({ page }) => {
+  await enterPlay(page);
+  await expect(stage(page)).toHaveAttribute('data-state', 'locked');
+  await page.getByRole('button', { name: '이야기 시작하기' }).click();
+
+  // 1장: 헤더 배지와 내레이션 문장
+  await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
+  await expect(page.getByText('시작 (1/5)')).toBeVisible();
+  await expect(page.getByText(/옛날 어느 마을에/)).toBeVisible();
+
+  // 다시 듣기는 재생만 하고 장을 넘기지 않는다
+  await page.getByRole('button', { name: '내레이션 다시 듣기' }).click();
+  await page.waitForTimeout(300);
+  await expect(page.getByText('시작 (1/5)')).toBeVisible();
+
+  // 2장으로 넘어간다
+  await page.getByRole('button', { name: '다음 →' }).click();
+  await expect(page.getByText('시작 (2/5)')).toBeVisible();
+  await expect(page.getByText(/얼굴이 노래지고/)).toBeVisible();
+
+  // 마지막 내레이션을 넘기면 대화 장면이 시작된다
+  await page.getByRole('button', { name: '다음 →' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild', { timeout: 20000 });
+  await expect(page.getByText('장면 1 / 4')).toBeVisible();
+});
 
 test('잠금 해제 후 캐릭터 첫 대사가 나오고 아이 차례가 된다', async ({ page }) => {
   await enterPlay(page);
@@ -92,6 +143,45 @@ test('확인 화면에서 다시 말하기를 누르면 녹음으로 돌아간�
   await page.getByRole('button', { name: '다시 말하기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'recording');
   await expect(page.getByText('이렇게 말했나요?')).toBeHidden();
+});
+
+test('대화 4장면을 완주하면 사후 활동으로 넘어간다', async ({ page }) => {
+  test.setTimeout(180_000);
+  await enterPlay(page);
+  await unlockAndWaitTurn(page);
+
+  // 장면이 끝나면 "다음 장면"이 나오고, 그 사이 내레이션을 한 장 더 넘긴다.
+  // 마지막 장면까지 끝나면 사후 활동으로 이동한다.
+  // 장면당 2~3턴이라 넉넉히 돈다 — 사후 활동에 도착하면 빠져나온다
+  for (let i = 0; i < 30 && !/\/post\/order$/.test(page.url()); i += 1) {
+    // 아이가 행동할 수 있는 상태가 될 때까지 기다린다(재생·분석 중에는 버튼이 없다)
+    await page.waitForFunction(
+      () =>
+        !document.querySelector('[data-testid=play-stage]') ||
+        ['awaitingChild', 'sceneComplete', 'narrating', 'error', 'fatal'].includes(
+          document.querySelector<HTMLElement>('[data-testid=play-stage]')?.dataset.state ?? '',
+        ),
+      null,
+      { timeout: 30000 },
+    );
+    if (/\/post\/order$/.test(page.url())) break;
+
+    const state = await stage(page).getAttribute('data-state');
+    if (state === 'narrating') {
+      await skipNarration(page);
+    } else if (state === 'sceneComplete') {
+      const next = page.getByRole('button', { name: '다음 장면 →' });
+      // 마지막 장면에는 "다음 장면"이 없다 — 사후 활동으로 넘어간다
+      if (!(await next.isVisible())) break;
+      await next.click();
+    } else if (state === 'awaitingChild') {
+      await playOneTurn(page);
+    } else {
+      throw new Error(`예상 못한 상태: ${state}`);
+    }
+  }
+
+  await page.waitForURL(/\/post\/order$/, { timeout: 30000 });
 });
 
 test('음성 인식에 실패하면 안내가 뜨고 다시 시도할 수 있다', async ({ page }) => {

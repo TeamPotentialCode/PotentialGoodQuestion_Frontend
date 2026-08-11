@@ -47,6 +47,8 @@ export type PlayEvent =
   | { type: 'TAP_SEND' }
   | { type: 'TAP_RERECORD' }
   | { type: 'TAP_RETRY' }
+  // 내레이션은 오디오가 끝나도 자동으로 넘어가지 않는다 — 아이가 "다음"을 눌러 넘긴다
+  | { type: 'TAP_NEXT' }
   | { type: 'TAP_NEXT_SCENE' }
   // 이펙트 완료 (과거형) — useEffectRunner가 디스패치한다
   | { type: 'SCENE_LOADED'; scene: ScenePlan }

@@ -48,9 +48,11 @@ export function availableActions(phase: Phase): PlayEvent['type'][] {
     case 'error':
       return ['TAP_RETRY'];
     case 'sceneComplete':
-      return ['TAP_NEXT_SCENE'];
-    case 'loading':
+      // 이야기가 끝났으면 다음 장면이 없다 — 화면은 말하기 후 활동으로 넘어간다
+      return phase.postActivity ? [] : ['TAP_NEXT_SCENE'];
     case 'narrating':
+      return ['TAP_NEXT'];
+    case 'loading':
     case 'speaking':
     case 'transcribing':
     case 'analyzing':

@@ -124,16 +124,16 @@ export function PlayStage({
             </p>
           )}
 
-          {phase.tag === 'sceneComplete' ? (
+          {phase.tag === 'sceneComplete' && (
             <p className="text-body text-ink">이 장면이 끝났어요.</p>
-          ) : (
-            <Stack gap="sm" align="center">
-              <PlayControls phase={phase} onAction={onAction} />
-              {phase.tag === 'awaitingChild' && (
-                <span className="text-caption text-ink-soft">눌러서 말하기</span>
-              )}
-            </Stack>
           )}
+
+          <Stack gap="sm" align="center">
+            <PlayControls phase={phase} onAction={onAction} />
+            {phase.tag === 'awaitingChild' && (
+              <span className="text-caption text-ink-soft">눌러서 말하기</span>
+            )}
+          </Stack>
         </Stack>
       }
     />

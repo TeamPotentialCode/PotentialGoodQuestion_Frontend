@@ -54,4 +54,18 @@ describe('availableActions', () => {
   it('reviewing은 다시 말하기와 보내기 두 개다', () => {
     expect(availableActions(PHASES.reviewing)).toEqual(['TAP_RERECORD', 'TAP_SEND']);
   });
+
+  it('narrating은 "다음" 하나다 — 아이가 눌러서 넘긴다', () => {
+    expect(availableActions(PHASES.narrating)).toEqual(['TAP_NEXT']);
+  });
+
+  it('장면이 끝나면 다음 장면으로, 이야기가 끝나면 아무 버튼도 없다', () => {
+    expect(
+      availableActions({ tag: 'sceneComplete', nextSceneId: 5, postActivity: false }),
+    ).toEqual(['TAP_NEXT_SCENE']);
+    // 이야기 끝 — 화면이 말하기 후 활동으로 넘어가므로 "다음 장면"을 주면 안 된다
+    expect(
+      availableActions({ tag: 'sceneComplete', nextSceneId: null, postActivity: true }),
+    ).toEqual([]);
+  });
 });
