@@ -118,8 +118,28 @@ function noChildrenFlag(): boolean {
   return typeof localStorage !== 'undefined' && localStorage.getItem(NO_CHILDREN_KEY) === '1';
 }
 
-let children: Child[] = noChildrenFlag() ? [] : [seedChild()];
+/*
+ * 아이는 **보호자별로** 나눠 갖는다. 실백엔드가 그렇게 동작하고,
+ * 전역 배열 하나로 두면 계정을 바꿔도 같은 아이가 보여서
+ * "앞 계정 데이터가 새는지" 를 테스트로 확인할 수 없다.
+ */
+const childrenByParent = new Map<number, Child[]>();
 let nextChildId = 2;
+
+/** 목 액세스 토큰은 mock-access-{parentId} 형태다 */
+function parentIdOf(request: Request): number {
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+  return Number(token.replace('mock-access-', '')) || SEED_USER.parentId;
+}
+
+function childrenOf(parentId: number): Child[] {
+  if (!childrenByParent.has(parentId)) {
+    // 시드 보호자만 아이를 하나 갖고 시작한다. 새로 가입한 계정은 비어 있다
+    const seeded = parentId === SEED_USER.parentId && !noChildrenFlag() ? [seedChild()] : [];
+    childrenByParent.set(parentId, seeded);
+  }
+  return childrenByParent.get(parentId)!;
+}
 
 /** 인증·아이 상태를 시드로 되돌린다. 테스트 간 격리에 쓴다. */
 export function resetApiState(): void {
@@ -129,21 +149,21 @@ export function resetApiState(): void {
   validRefreshToken = '';
   refreshRecovered = false;
   if (typeof localStorage !== 'undefined') localStorage.removeItem(NO_CHILDREN_KEY);
-  children = [seedChild()];
+  childrenByParent.clear();
   nextChildId = 2;
 }
 
 /** 아이 미등록 상태를 만든다(등록 화면 확인용). 새로고침해도 유지된다. */
 export function clearChildren(): void {
   if (typeof localStorage !== 'undefined') localStorage.setItem(NO_CHILDREN_KEY, '1');
-  children = [];
+  childrenByParent.clear();
   nextChildId = 2;
 }
 
 // 실백엔드 SessionInfo 와 같은 형태로 변환한다.
 // 목 내부는 장면 페이로드를 들고 있지만 응답에는 currentSceneId 만 노출한다
 function toSessionInfo(session: MockSession): SessionInfo {
-  const child = children.find((c) => c.childId === session.childId);
+  const child = [...childrenByParent.values()].flat().find((c) => c.childId === session.childId);
   return {
     sessionId: session.sessionId,
     storyId: session.storyId,
@@ -193,15 +213,16 @@ export const handlers = [
   // ---------- 아이 프로필 ----------
   http.get(api('/children'), async ({ request }) => {
     await simulateLatency();
-    return requireAuth(request) ?? ok(children);
+    return requireAuth(request) ?? ok(childrenOf(parentIdOf(request)));
   }),
 
   http.post(api('/children'), async ({ request }) => {
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
+    const mine = childrenOf(parentIdOf(request));
     // MVP 1명 제한. 실백엔드가 409가 아니라 400을 준다
-    if (children.length >= 1) {
+    if (mine.length >= 1) {
       return fail(400, 'CHILD_003', '등록 가능한 아이 수를 초과했습니다.');
     }
     const body = (await request.json()) as ChildUpsertRequest;
@@ -213,7 +234,7 @@ export const handlers = [
       age: CURRENT_YEAR - body.birthYear,
       createdAt: '2026-08-10T09:00:00',
     };
-    children.push(child);
+    mine.push(child);
     // 등록됐으니 "아이 없음" 상태를 해제한다
     if (typeof localStorage !== 'undefined') localStorage.removeItem(NO_CHILDREN_KEY);
     return ok(child, 201);
@@ -223,7 +244,7 @@ export const handlers = [
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
-    const child = children.find((c) => c.childId === Number(params.childId));
+    const child = childrenOf(parentIdOf(request)).find((c) => c.childId === Number(params.childId));
     if (!child) return fail(404, 'CHILD_001', '아이를 찾을 수 없습니다.');
     const body = (await request.json()) as ChildUpsertRequest;
     child.name = body.name;
@@ -241,7 +262,8 @@ export const handlers = [
     const childId = new URL(request.url).searchParams.get('childId');
     if (!childId) return fail(400, 'HOME_001', '아이 ID는 필수입니다.');
 
-    const session = activeSession();
+    // 요청한 아이의 세션만 본다. 아이는 이미 보호자별로 나뉘어 있으므로 계정 경계도 함께 지켜진다
+    const session = activeSession(Number(childId));
     const scene = session ? buildScenePayload(session) : null;
     const home: HomeData = {
       continueSession: session

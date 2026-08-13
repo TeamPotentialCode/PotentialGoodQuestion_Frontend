@@ -87,3 +87,45 @@ test('로그아웃하면 토큰이 지워지고 로그인 화면으로 돌아간
   await page.waitForURL('**/login');
   expect(await page.evaluate(() => localStorage.getItem('gq:accessToken'))).toBeNull();
 });
+
+/*
+ * 계정 전환 시 데이터가 새지 않아야 한다.
+ * 로그아웃은 토큰만 지웠고 staleTime(30초) 안에는 재조회를 안 해서,
+ * 두 번째 계정 홈에 첫 계정의 아이와 이어하기가 그대로 보였다.
+ */
+test('계정을 바꾸면 앞 계정의 아이가 보이지 않는다', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByRole('button', { name: '로그인' }).waitFor();
+  await page.evaluate(() => {
+    localStorage.clear();
+    window.__gqMock?.resetMockState();
+  });
+
+  // 계정 A — 시드 보호자에게는 아이 "문열" 이 있다
+  await page.getByLabel('이메일').fill(DEMO.email);
+  await page.getByLabel('비밀번호').fill(DEMO.password);
+  await page.getByRole('button', { name: '로그인' }).click();
+  await page.waitForURL('**/home');
+  await expect(page.getByText('문열')).toBeVisible();
+
+  await page.getByRole('button', { name: '로그아웃' }).click();
+  await page.waitForURL('**/login');
+
+  // 계정 B — 새로 가입한 계정이라 아이가 없다
+  await page.getByRole('link', { name: /회원가입/ }).click();
+  await page.waitForURL('**/signup');
+  await page.getByLabel('이메일').fill(`switch${Date.now()}@test.com`);
+  await page.getByLabel('보호자 이름').fill('둘째보호자');
+  await page.getByLabel('비밀번호', { exact: true }).fill('test1234!');
+  const confirm = page.getByLabel(/비밀번호 확인/);
+  if (await confirm.count()) await confirm.fill('test1234!');
+  await page.getByRole('button', { name: '회원가입' }).click();
+  // 여기서 page.goto 를 쓰면 안 된다 — 전체 새로고침이라 캐시가 어차피 비워져
+  // 이 테스트가 아무것도 검증하지 못한다. 가입은 client-side 로 /home 으로 이동한다
+  await page.waitForURL('**/home');
+
+  // 앞 계정의 아이도, 이어하기도 남아 있으면 안 된다
+  await expect(page.getByText('문열')).toBeHidden();
+  await expect(page.getByText('아직 등록된 아이가 없어요.')).toBeVisible();
+  await expect(page.getByText('방귀 뀌는 며느리')).toBeHidden();
+});

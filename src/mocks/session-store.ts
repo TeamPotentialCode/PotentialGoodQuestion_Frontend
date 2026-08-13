@@ -139,8 +139,14 @@ export function getSession(sessionId: number): MockSession | undefined {
   return sessions.get(sessionId);
 }
 
-export function activeSession(): MockSession | undefined {
-  return [...sessions.values()].reverse().find((s) => s.status === 'IN_PROGRESS');
+/**
+ * 진행 중인 최신 세션. childId 를 주면 그 아이 것만 본다 —
+ * 안 그러면 계정을 바꿔도 앞 계정의 "이어하기" 가 홈에 그대로 뜬다
+ */
+export function activeSession(childId?: number): MockSession | undefined {
+  return [...sessions.values()]
+    .reverse()
+    .find((s) => s.status === 'IN_PROGRESS' && (childId === undefined || s.childId === childId));
 }
 
 export function buildScenePayload(session: MockSession): ScenePayload {

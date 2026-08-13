@@ -5,6 +5,9 @@
 
 const ACCESS_KEY = 'gq:accessToken';
 const REFRESH_KEY = 'gq:refreshToken';
+// 계정이 바뀌었는지 판단하는 데 쓴다. 토큰 재발급(같은 계정)과 계정 전환을 구분해야
+// 재발급 때마다 캐시를 날리지 않으면서 계정 전환에서는 확실히 비울 수 있다
+const PARENT_KEY = 'gq:parentId';
 
 function storage(): Storage | null {
   // SSR·프리렌더 중에는 localStorage가 없다
@@ -19,11 +22,23 @@ export function getRefreshToken(): string | null {
   return storage()?.getItem(REFRESH_KEY) ?? null;
 }
 
-export function setTokens(tokens: { accessToken: string; refreshToken: string }): void {
+export function getParentId(): number | null {
+  const raw = storage()?.getItem(PARENT_KEY);
+  return raw === null || raw === undefined ? null : Number(raw);
+}
+
+export function setTokens(tokens: {
+  accessToken: string;
+  refreshToken: string;
+  parentId?: number;
+}): void {
   const s = storage();
   if (!s) return;
   s.setItem(ACCESS_KEY, tokens.accessToken);
   s.setItem(REFRESH_KEY, tokens.refreshToken);
+  // 로그인·가입은 물론 재발급 응답에도 parentId 가 온다(백엔드 TokenResponse).
+  // 혹시 빠져 오더라도 기존 값을 지우지는 않는다
+  if (tokens.parentId !== undefined) s.setItem(PARENT_KEY, String(tokens.parentId));
   notify();
 }
 
@@ -32,6 +47,7 @@ export function clearTokens(): void {
   if (!s) return;
   s.removeItem(ACCESS_KEY);
   s.removeItem(REFRESH_KEY);
+  s.removeItem(PARENT_KEY);
   notify();
 }
 
