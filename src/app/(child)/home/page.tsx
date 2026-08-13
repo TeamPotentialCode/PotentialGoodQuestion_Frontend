@@ -9,7 +9,7 @@ import { ChildPicker } from '@/features/child-profile/child-picker';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getHome } from '@/features/home/api';
 import { StoryList } from '@/features/home/story-list';
-import { Screen, Stack, TouchTarget } from '@/shared/ui';
+import { Screen, Stack, TabBar, TouchTarget } from '@/shared/ui';
 
 export default function HomePage() {
   const router = useRouter();
@@ -106,6 +106,8 @@ export default function HomePage() {
           로그아웃
         </TouchTarget>
       </Stack>
+
+      <TabBar />
     </Screen>
   );
 }

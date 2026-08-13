@@ -1,7 +1,17 @@
 import type { SVGProps } from 'react';
 import { cn } from '@/shared/ui/cn';
 
-type IconName = 'wave' | 'speaker' | 'image' | 'person' | 'close' | 'mic' | 'grip' | 'check';
+type IconName =
+  | 'wave'
+  | 'speaker'
+  | 'image'
+  | 'person'
+  | 'close'
+  | 'mic'
+  | 'grip'
+  | 'check'
+  | 'home'
+  | 'book';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;
@@ -68,6 +78,18 @@ const paths: Record<IconName, React.ReactNode> = {
     <>
       <path d="M6 10h12" />
       <path d="M6 14h12" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="M4 10.5 12 4l8 6.5" />
+      <path d="M6 10v9h12v-9" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2V5z" />
+      <path d="M20 5a2 2 0 0 0-2-2h-5v18h5a2 2 0 0 0 2-2V5z" />
     </>
   ),
   check: (

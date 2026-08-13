@@ -1,5 +1,11 @@
 import { apiRequest } from '@/core/api/client';
-import type { SessionInfo, StoryDetail } from '@/core/api/types';
+import type { SessionInfo, StoryDetail, StorySummary } from '@/core/api/types';
+
+/** 주제를 주면 그 주제만, 안 주면 전체. 백엔드가 topic 파라미터를 받는다 */
+export function getStories(topic?: string): Promise<StorySummary[]> {
+  const query = topic ? `?topic=${encodeURIComponent(topic)}` : '';
+  return apiRequest<StorySummary[]>(`/stories${query}`);
+}
 
 export function getStoryDetail(storyId: number): Promise<StoryDetail> {
   return apiRequest<StoryDetail>(`/stories/${storyId}`);

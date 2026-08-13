@@ -10,3 +10,4 @@ export { Icon } from '@/shared/ui/icon';
 export { TwoPane } from '@/shared/ui/two-pane';
 export { ImageSlot } from '@/shared/ui/image-slot';
 export { CardRow } from '@/shared/ui/card-row';
+export { TabBar } from '@/shared/ui/tab-bar';
