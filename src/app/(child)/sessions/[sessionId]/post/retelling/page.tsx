@@ -1,0 +1,254 @@
+'use client';
+
+import { useMutation, useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { startActivity, submitActivity } from '@/features/activity/api';
+import { ActivityHeader } from '@/features/activity/activity-header';
+import { activityErrorMessage } from '@/features/activity/error-message';
+import {
+  handoffUnknownOnServer,
+  readHandoff,
+  subscribeToHandoff,
+} from '@/features/activity/handoff';
+import { useRequireAuth } from '@/features/auth/use-session';
+import { transcribe } from '@/features/play/api';
+import { useAudioOwnership } from '@/features/play/useAudioOwnership';
+import { CardRow, Icon, Screen, Stack, TouchTarget, TwoPane } from '@/shared/ui';
+
+/**
+ * 한 번 말하고 끝나는 화면이라 대화 화면의 상태 머신(core)을 쓰지 않는다.
+ * 로컬 state 로 충분하다
+ */
+type Step = 'idle' | 'recording' | 'transcribing' | 'reviewing' | 'submitting';
+
+export default function PostRetellingPage() {
+  const authenticated = useRequireAuth();
+  const router = useRouter();
+  const params = useParams<{ sessionId: string }>();
+  const sessionId = Number(params.sessionId);
+  const audio = useAudioOwnership();
+
+  const [step, setStep] = useState<Step>('idle');
+  const [said, setSaid] = useState('');
+  const [failed, setFailed] = useState(false);
+
+  // 순서 맞추기에서 넘어온 정답 순서와 핵심 단어.
+  // 서버에서는 sessionStorage 를 못 읽으므로 undefined("아직 모름")로 시작한다 —
+  // null("없음")과 구분하지 않으면 하이드레이션 직후 한 프레임 동안 순서 화면으로 튕긴다
+  const snapshot = useCallback(() => readHandoff(sessionId), [sessionId]);
+  const handoff = useSyncExternalStore(subscribeToHandoff, snapshot, handoffUnknownOnServer);
+
+  useEffect(() => () => audio.releaseAll(), [audio]);
+
+  const activity = useQuery({
+    queryKey: ['activity', sessionId],
+    queryFn: () => startActivity(sessionId),
+    enabled: authenticated && Number.isFinite(sessionId),
+    staleTime: Infinity,
+  });
+
+  const submit = useMutation({
+    mutationFn: () =>
+      submitActivity(sessionId, {
+        submittedOrder: handoff?.submittedOrder ?? [],
+        reconstructionText: said,
+      }),
+    onSuccess: () => router.replace(`/sessions/${sessionId}/complete`),
+    onError: () => setStep('reviewing'),
+  });
+
+  async function startTalking() {
+    setFailed(false);
+    setStep('recording');
+    try {
+      await audio.startMic();
+    } catch {
+      setFailed(true);
+      setStep('idle');
+    }
+  }
+
+  async function stopAndTranscribe() {
+    setStep('transcribing');
+    try {
+      const blob = await audio.stopMic();
+      if (!blob || blob.size === 0) throw new Error('빈 녹음');
+      const result = await transcribe(blob);
+      if (!result.text.trim()) throw new Error('빈 텍스트');
+      setSaid(result.text);
+      setStep('reviewing');
+    } catch {
+      setFailed(true);
+      setStep('idle');
+    }
+  }
+
+  if (!authenticated || activity.isPending || handoff === undefined) {
+    return (
+      <Screen className="items-center justify-center">
+        <p className="text-body text-ink-soft">불러오는 중…</p>
+      </Screen>
+    );
+  }
+
+  // 핵심 단어가 없으면 순서 맞추기부터 다시 — 여기서 만들어낼 수 있는 값이 아니다
+  if (handoff === null) {
+    return (
+      <Screen scrollable className="py-10" data-testid="post-retelling">
+        <Stack gap="lg" align="center" className="mx-auto w-full max-w-lg">
+          <p className="text-body text-ink">먼저 이야기 순서를 맞춰 볼까?</p>
+          <Link href={`/sessions/${sessionId}/post/order`}>
+            <TouchTarget size="lg">순서 맞추러 가기</TouchTarget>
+          </Link>
+        </Stack>
+      </Screen>
+    );
+  }
+
+  if (activity.isError || !activity.data) {
+    return (
+      <Screen scrollable className="py-10">
+        <Stack gap="lg" className="mx-auto w-full max-w-lg">
+          <p role="alert" className="text-body text-ink">
+            {activityErrorMessage(activity.error)}
+          </p>
+          <Link href="/home">
+            <TouchTarget look="outline">홈으로</TouchTarget>
+          </Link>
+        </Stack>
+      </Screen>
+    );
+  }
+
+  // 아이가 맞힌 정답 순서대로 늘어놓는다
+  const cards = handoff.submittedOrder
+    .map((id) => activity.data.cards.find((c) => c.id === id))
+    .filter((c) => c !== undefined);
+
+  return (
+    <Screen scrollable className="py-4" data-testid="post-retelling" data-step={step}>
+      <Stack gap="lg" className="mx-auto w-full max-w-5xl">
+        <ActivityHeader title="이야기 다시 말하기" step="2 / 2" />
+
+        <Stack gap="sm" align="center">
+          <h2 className="text-title font-semibold text-ink">
+            이번에는 네가 이야기를 들려줄 차례야!
+          </h2>
+          <p className="text-caption text-ink-soft">장면과 단어를 보면서 처음부터 이야기해 봐.</p>
+        </Stack>
+
+        <TwoPane
+          left={
+            <Stack gap="md">
+              <p className="flex items-center gap-2 text-caption text-ink-soft">
+                <Icon name="image" className="size-4" />
+                이야기 순서 (1 ~ {cards.length})
+              </p>
+              <CardRow>
+                {cards.map((card, i) => (
+                  <li
+                    key={card.id}
+                    className="flex flex-col items-center gap-2 rounded-card border border-line bg-surface p-3"
+                  >
+                    <span className="flex w-full items-center justify-center rounded-card bg-surface-raised py-5 text-ink-soft">
+                      <Icon name="image" className="size-6" />
+                    </span>
+                    <span className="flex size-6 items-center justify-center rounded-full bg-surface-raised text-caption text-ink">
+                      {i + 1}
+                    </span>
+                  </li>
+                ))}
+              </CardRow>
+
+              <Stack gap="sm">
+                <p className="text-caption text-ink-soft">떠올려 볼 단어</p>
+                <div className="flex flex-wrap gap-2">
+                  {handoff.retellingKeywords.map((word) => (
+                    <span
+                      key={word}
+                      className="rounded-full bg-surface-raised px-4 py-1.5 text-caption text-ink"
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </Stack>
+            </Stack>
+          }
+          right={
+            <Stack gap="md" align="center">
+              {step === 'idle' && (
+                <>
+                  <p className="text-caption text-ink-soft">준비되면 마이크를 눌러 이야기해 줘.</p>
+                  <TouchTarget size="record" aria-label="말하기" onClick={startTalking}>
+                    <Icon name="mic" className="size-9 text-cta-ink" />
+                  </TouchTarget>
+                  <span className="text-caption text-ink-soft">말하기</span>
+                </>
+              )}
+
+              {step === 'recording' && (
+                <>
+                  <p className="text-body text-ink-soft" aria-live="polite">
+                    듣고 있어요…
+                  </p>
+                  <TouchTarget size="lg" onClick={stopAndTranscribe}>
+                    보내기
+                  </TouchTarget>
+                </>
+              )}
+
+              {step === 'transcribing' && (
+                <p className="text-body text-ink-soft" aria-live="polite">
+                  네 말을 듣고 있어요…
+                </p>
+              )}
+
+              {(step === 'reviewing' || step === 'submitting') && (
+                <Stack gap="sm" className="w-full">
+                  <p className="text-caption text-ink-soft">내가 이렇게 말했어요</p>
+                  <p className="min-h-40 w-full rounded-card bg-surface-raised px-5 py-4 text-body text-ink">
+                    {said}
+                  </p>
+                  <Stack direction="row" gap="md" justify="center">
+                    <TouchTarget
+                      size="lg"
+                      look="outline"
+                      onClick={startTalking}
+                      disabled={submit.isPending}
+                    >
+                      다시 말하기
+                    </TouchTarget>
+                    <TouchTarget
+                      size="lg"
+                      onClick={() => {
+                        setStep('submitting');
+                        submit.mutate();
+                      }}
+                      disabled={submit.isPending}
+                    >
+                      보내기
+                    </TouchTarget>
+                  </Stack>
+                </Stack>
+              )}
+
+              {failed && (
+                <p role="alert" className="text-body text-ink">
+                  잘 안 들렸어요. 한 번만 더 말해 줄래요?
+                </p>
+              )}
+              {submit.isError && (
+                <p role="alert" className="text-body text-ink">
+                  잠깐 문제가 생겼어요. 다시 보내 볼까요?
+                </p>
+              )}
+            </Stack>
+          }
+        />
+      </Stack>
+    </Screen>
+  );
+}

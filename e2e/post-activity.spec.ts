@@ -128,3 +128,62 @@ test('정답 순서로 맞추면 다시 말하기로 넘어가고 핵심 단어�
   expect(parsed.retellingKeywords).toHaveLength(5);
   expect(parsed.submittedOrder).toEqual(['card_1', 'card_2', 'card_3', 'card_4', 'card_5']);
 });
+
+/** 순서를 맞혀 다시 말하기 화면까지 간다 */
+async function reachRetelling(page: Page): Promise<number> {
+  const sessionId = await enterOrder(page);
+  await moveRight(page, 'card_3');
+  await moveRight(page, 'card_5');
+  await moveRight(page, 'card_3');
+  await moveRight(page, 'card_5');
+  await page.getByRole('button', { name: '순서 확인하기' }).click();
+  await page.waitForURL(/\/post\/retelling$/, { timeout: 15000 });
+  return sessionId;
+}
+
+test('다시 말하기: 정답 순서의 카드와 핵심 단어가 보인다', async ({ page }) => {
+  await reachRetelling(page);
+
+  await expect(page.getByText('이번에는 네가 이야기를 들려줄 차례야!')).toBeVisible();
+  await expect(page.getByText('이야기 순서 (1 ~ 5)')).toBeVisible();
+  for (const word of ['며느리', '방귀', '배나무', '마을', '특별한 힘']) {
+    await expect(page.getByText(word, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole('button', { name: '말하기' })).toBeVisible();
+});
+
+test('다시 말하기: 새로고침해도 핵심 단어가 남는다', async ({ page }) => {
+  await reachRetelling(page);
+  await page.reload();
+  await expect(page.getByTestId('post-retelling')).toBeVisible();
+  await expect(page.getByText('특별한 힘', { exact: true })).toBeVisible();
+});
+
+test('다시 말하기: 순서를 안 맞히고 들어오면 순서 화면으로 안내한다', async ({ page }) => {
+  const sessionId = await enterOrder(page);
+  await page.evaluate(() => sessionStorage.clear());
+  await page.goto(`/sessions/${sessionId}/post/retelling`);
+
+  await expect(page.getByText('먼저 이야기 순서를 맞춰 볼까?')).toBeVisible();
+  await page.getByRole('link', { name: '순서 맞추러 가기' }).click();
+  await page.waitForURL(/\/post\/order$/);
+});
+
+test('다시 말하기: 말하고 보내면 완료 화면으로 간다', async ({ page }) => {
+  const sessionId = await reachRetelling(page);
+
+  await page.getByRole('button', { name: '말하기' }).click();
+  await expect(page.getByTestId('post-retelling')).toHaveAttribute('data-step', 'recording');
+  await page.waitForTimeout(400);
+
+  await page.getByRole('button', { name: '보내기' }).click();
+  await expect(page.getByText('내가 이렇게 말했어요')).toBeVisible({ timeout: 20000 });
+
+  await page.getByRole('button', { name: '보내기' }).click();
+  await page.waitForURL(new RegExp(`/sessions/${sessionId}/complete$`), { timeout: 20000 });
+
+  await expect(page.getByText('오늘의 이야기를 모두 마쳤어!')).toBeVisible();
+  await expect(page.getByText('방귀 뀌는 며느리')).toBeVisible();
+  await page.getByRole('link', { name: '홈으로 가기' }).click();
+  await page.waitForURL('**/home');
+});

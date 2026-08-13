@@ -106,7 +106,25 @@ export function PlayStage({
           )}
 
           {phase.tag === 'transcribing' && (
-            <SpeechBubble speaker="child" pending className="w-full max-w-none" />
+            <Stack gap="sm" align="center" className="w-full">
+              <SpeechBubble speaker="child" pending className="w-full max-w-none" />
+              <p className="text-body text-ink-soft" aria-live="polite">
+                네 말을 듣고 있어요…
+              </p>
+            </Stack>
+          )}
+
+          {/*
+           * 실백엔드 LLM 응답이 평균 19초, 최대 38초 걸림 조치 필요
+           * 점 3개만 움직이면 아이는 고장 난 줄 안다 — 무슨 일이 일어나는지 글자로 알려준다
+           */}
+          {phase.tag === 'analyzing' && (
+            <div className="w-full rounded-card bg-surface-raised px-5 py-4 text-center">
+              <p className="text-body text-ink" aria-live="polite">
+                네 말을 잘 생각하고 있어요.
+              </p>
+              <p className="text-caption text-ink-soft">조금만 기다려 줄래?</p>
+            </div>
           )}
 
           {phase.tag === 'reviewing' && transcript && (

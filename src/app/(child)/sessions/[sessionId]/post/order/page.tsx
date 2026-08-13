@@ -20,10 +20,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { startActivity, submitActivity } from '@/features/activity/api';
+import { ActivityHeader } from '@/features/activity/activity-header';
+import { activityErrorMessage } from '@/features/activity/error-message';
 import { saveHandoff } from '@/features/activity/handoff';
 import { OrderCard } from '@/features/activity/order-card';
 import { useRequireAuth } from '@/features/auth/use-session';
-import { CardRow, Icon, Screen, Stack, TouchTarget } from '@/shared/ui';
+import { CardRow, Screen, Stack, TouchTarget } from '@/shared/ui';
 
 export default function PostOrderPage() {
   const authenticated = useRequireAuth();
@@ -87,7 +89,7 @@ export default function PostOrderPage() {
       <Screen scrollable className="py-10">
         <Stack gap="lg" className="mx-auto w-full max-w-lg">
           <p role="alert" className="text-body text-ink">
-            활동을 불러오지 못했어요.
+            {activityErrorMessage(activity.error)}
           </p>
           <Link href="/home">
             <TouchTarget look="outline">홈으로</TouchTarget>
@@ -102,27 +104,7 @@ export default function PostOrderPage() {
   return (
     <Screen scrollable className="py-4" data-testid="post-order">
       <Stack gap="lg" className="mx-auto w-full max-w-5xl">
-        <Stack
-          direction="row"
-          align="center"
-          justify="between"
-          gap="md"
-          className="border-b border-line pb-3"
-        >
-          <Link
-            href="/home"
-            aria-label="활동 나가기"
-            className="flex size-touch items-center justify-center rounded-full text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
-          >
-            <Icon name="close" className="size-7" />
-          </Link>
-          <h1 className="text-body font-semibold text-ink">이야기 돌아보기</h1>
-          <span className="min-w-40 text-right">
-            <span className="rounded-full bg-surface-raised px-4 py-1.5 text-caption text-ink">
-              1 / 2
-            </span>
-          </span>
-        </Stack>
+        <ActivityHeader title="이야기 돌아보기" step="1 / 2" />
 
         <Stack gap="sm" align="center">
           <h2 className="text-title font-semibold text-ink">이야기를 순서대로 놓아 볼까?</h2>

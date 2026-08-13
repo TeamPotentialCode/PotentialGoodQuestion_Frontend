@@ -15,21 +15,54 @@ export interface ActivityHandoff {
 
 const key = (sessionId: number) => `gq.activity.${sessionId}`;
 
+/*
+ * useSyncExternalStore 의 getSnapshot 은 같은 값이면 **같은 참조**를 돌려줘야 한다.
+ * 매번 JSON.parse 하면 새 객체가 나와 렌더가 무한히 돈다 — 파싱 결과를 캐시한다
+ */
+const cache = new Map<number, { raw: string | null; value: ActivityHandoff | null }>();
+const listeners = new Set<() => void>();
+
+function notify(): void {
+  for (const l of listeners) l();
+}
+
+export function subscribeToHandoff(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 export function saveHandoff(sessionId: number, value: ActivityHandoff): void {
   try {
     sessionStorage.setItem(key(sessionId), JSON.stringify(value));
+    cache.delete(sessionId);
+    notify();
   } catch {
     // 저장이 막혀 있어도 이번 화면 전환은 메모리로 이어진다
   }
 }
 
+/** 저장된 인수인계. 없으면 null. 서버에서는 알 수 없으므로 undefined 를 쓴다 */
 export function readHandoff(sessionId: number): ActivityHandoff | null {
+  let raw: string | null = null;
   try {
-    const raw = sessionStorage.getItem(key(sessionId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as ActivityHandoff;
-    return Array.isArray(parsed.submittedOrder) ? parsed : null;
+    raw = sessionStorage.getItem(key(sessionId));
   } catch {
     return null;
   }
+
+  const hit = cache.get(sessionId);
+  if (hit && hit.raw === raw) return hit.value;
+
+  let value: ActivityHandoff | null = null;
+  try {
+    const parsed = raw ? (JSON.parse(raw) as ActivityHandoff) : null;
+    value = parsed && Array.isArray(parsed.submittedOrder) ? parsed : null;
+  } catch {
+    value = null;
+  }
+  cache.set(sessionId, { raw, value });
+  return value;
 }
+
+/** 서버 렌더·하이드레이션 시점에는 sessionStorage 를 못 읽는다 = 아직 모름 */
+export const handoffUnknownOnServer = () => undefined;
