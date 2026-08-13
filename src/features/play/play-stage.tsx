@@ -7,6 +7,7 @@ import {
   cn,
   Icon,
   ImageSlot,
+  MicLevel,
   SpeechBubble,
   Stack,
   TouchTarget,
@@ -162,25 +163,6 @@ export function PlayStage({
         </Stack>
       }
     />
-  );
-}
-
-/** 마이크 입력 막대 5칸 — 소리가 클수록 많이 켜진다 */
-function MicLevel({ level }: { level: number }) {
-  const lit = Math.round(level * 5);
-  return (
-    <span aria-hidden className="flex items-end gap-1.5" data-testid="mic-level" data-level={lit}>
-      {[1, 2, 3, 4, 5].map((step) => (
-        <span
-          key={step}
-          className={cn(
-            'w-2.5 rounded-full duration-(--motion-fast)',
-            step <= lit ? 'bg-ink' : 'bg-line',
-          )}
-          style={{ height: `${8 + step * 5}px` }}
-        />
-      ))}
-    </span>
   );
 }
 

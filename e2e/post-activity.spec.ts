@@ -187,3 +187,26 @@ test('다시 말하기: 말하고 보내면 완료 화면으로 간다', async (
   await page.getByRole('link', { name: '홈으로 가기' }).click();
   await page.waitForURL('**/home');
 });
+
+test('다시 말하기: 녹음 중 마이크 입력 크기가 보인다', async ({ page }) => {
+  await reachRetelling(page);
+
+  await page.getByRole('button', { name: '말하기' }).click();
+  await expect(page.getByTestId('post-retelling')).toHaveAttribute('data-step', 'recording');
+  // 대화 화면과 같은 표시가 여기에도 있어야 한다 — 녹음하는 화면은 둘이다
+  await expect(page.getByTestId('mic-level')).toBeVisible();
+});
+
+test('다시 말하기: 마이크를 못 켜면 이유를 알려준다', async ({ page }) => {
+  // 설정의 --use-fake-ui-for-media-stream 이 권한을 자동 허용하므로 직접 거부시킨다
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () =>
+      Promise.reject(new DOMException('Permission denied', 'NotAllowedError'));
+  });
+  await reachRetelling(page);
+
+  await page.getByRole('button', { name: '말하기' }).click();
+  // "잘 안 들렸어요" 가 아니라 마이크 문제라고 말해야 한다
+  await expect(page.getByText('마이크를 쓸 수 있게 허용해 주세요.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '말하기' })).toBeVisible();
+});

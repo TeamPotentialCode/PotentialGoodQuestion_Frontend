@@ -15,7 +15,15 @@ import {
 import { useRequireAuth } from '@/features/auth/use-session';
 import { transcribe } from '@/features/play/api';
 import { useAudioOwnership } from '@/features/play/useAudioOwnership';
-import { CardRow, Icon, Screen, Stack, TouchTarget, TwoPane } from '@/shared/ui';
+import {
+  MIC_NO_DEVICE_COPY,
+  MIC_PERMISSION_COPY,
+  MIC_UNKNOWN_COPY,
+  STT_RETRY_COPY,
+  STT_SILENT_COPY,
+} from '@/core/play-session/types';
+import { useMicLevel } from '@/features/play/use-mic-level';
+import { CardRow, Icon, MicLevel, Screen, Stack, TouchTarget, TwoPane } from '@/shared/ui';
 
 /**
  * 한 번 말하고 끝나는 화면이라 대화 화면의 상태 머신(core)을 쓰지 않는다.
@@ -32,7 +40,8 @@ export default function PostRetellingPage() {
 
   const [step, setStep] = useState<Step>('idle');
   const [said, setSaid] = useState('');
-  const [failed, setFailed] = useState(false);
+  // 실패 문구. 대화 화면과 같은 상수를 써서 두 화면의 안내가 어긋나지 않게 한다
+  const [failure, setFailure] = useState<string | null>(null);
 
   // 순서 맞추기에서 넘어온 정답 순서와 핵심 단어.
   // 서버에서는 sessionStorage 를 못 읽으므로 undefined("아직 모름")로 시작한다 —
@@ -59,13 +68,23 @@ export default function PostRetellingPage() {
     onError: () => setStep('reviewing'),
   });
 
+  const micLevel = useMicLevel(step === 'recording', audio.micLevel);
+
   async function startTalking() {
-    setFailed(false);
+    setFailure(null);
     setStep('recording');
     try {
       await audio.startMic();
-    } catch {
-      setFailed(true);
+    } catch (error) {
+      // 마이크가 안 켜진 것을 "잘 안 들렸어요" 로 안내하면 어른이 뭘 고쳐야 할지 알 수 없다
+      const name = error instanceof DOMException ? error.name : '';
+      setFailure(
+        name === 'NotAllowedError'
+          ? MIC_PERMISSION_COPY
+          : name === 'NotFoundError' || name === 'OverconstrainedError'
+            ? MIC_NO_DEVICE_COPY
+            : MIC_UNKNOWN_COPY,
+      );
       setStep('idle');
     }
   }
@@ -74,13 +93,22 @@ export default function PostRetellingPage() {
     setStep('transcribing');
     try {
       const blob = await audio.stopMic();
-      if (!blob || blob.size === 0) throw new Error('빈 녹음');
+      if (!blob || blob.size === 0) {
+        // 소리가 아예 안 들어온 것과 인식 실패는 조치가 다르다
+        setFailure(STT_SILENT_COPY);
+        setStep('idle');
+        return;
+      }
       const result = await transcribe(blob);
-      if (!result.text.trim()) throw new Error('빈 텍스트');
+      if (!result.text.trim()) {
+        setFailure(STT_RETRY_COPY);
+        setStep('idle');
+        return;
+      }
       setSaid(result.text);
       setStep('reviewing');
     } catch {
-      setFailed(true);
+      setFailure(STT_RETRY_COPY);
       setStep('idle');
     }
   }
@@ -194,6 +222,7 @@ export default function PostRetellingPage() {
                   <p className="text-body text-ink-soft" aria-live="polite">
                     듣고 있어요…
                   </p>
+                  <MicLevel level={micLevel} />
                   <TouchTarget size="lg" onClick={stopAndTranscribe}>
                     보내기
                   </TouchTarget>
@@ -235,9 +264,9 @@ export default function PostRetellingPage() {
                 </Stack>
               )}
 
-              {failed && (
+              {failure && (
                 <p role="alert" className="text-body text-ink">
-                  잘 안 들렸어요. 한 번만 더 말해 줄래요?
+                  {failure}
                 </p>
               )}
               {submit.isError && (
