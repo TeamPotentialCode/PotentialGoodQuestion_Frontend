@@ -6,7 +6,7 @@ import { ApiError } from '@/core/api/client';
 import type { Child, ChildUpsertRequest } from '@/core/api/types';
 import { createChild, updateChild } from '@/features/child-profile/api';
 import { childErrorMessage } from '@/features/child-profile/error-message';
-import { childSchema } from '@/features/child-profile/schema';
+import { childSchema, toUpsertRequest } from '@/features/child-profile/schema';
 import { toFieldErrors, type FieldErrors } from '@/features/auth/schema';
 import { Field, Stack, TouchTarget } from '@/shared/ui';
 
@@ -57,7 +57,8 @@ export function ChildForm({ child, onDone, onLimitReached }: ChildFormProps) {
       return;
     }
     setFieldErrors({});
-    mutation.mutate(parsed.data);
+    // 화면은 나이를 받지만 백엔드는 출생연도를 받는다
+    mutation.mutate(toUpsertRequest(parsed.data));
   }
 
   return (

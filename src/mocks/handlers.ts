@@ -208,8 +208,9 @@ export const handlers = [
     const child: Child = {
       childId: nextChildId++,
       name: body.name,
-      birthYear: CURRENT_YEAR - body.age,
-      age: body.age,
+      // 요청은 birthYear, 응답은 birthYear + 서버가 계산한 age (실백엔드와 동일)
+      birthYear: body.birthYear,
+      age: CURRENT_YEAR - body.birthYear,
       createdAt: '2026-08-10T09:00:00',
     };
     children.push(child);
@@ -226,8 +227,8 @@ export const handlers = [
     if (!child) return fail(404, 'CHILD_001', '아이를 찾을 수 없습니다.');
     const body = (await request.json()) as ChildUpsertRequest;
     child.name = body.name;
-    child.age = body.age;
-    child.birthYear = CURRENT_YEAR - body.age;
+    child.birthYear = body.birthYear;
+    child.age = CURRENT_YEAR - body.birthYear;
     return ok(child);
   }),
 

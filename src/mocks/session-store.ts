@@ -13,6 +13,7 @@ import type {
   UtteranceValidity,
 } from '@/core/api/types';
 import {
+  ALL_SCENES,
   DIALOGUE_SCENES,
   ELEMENT_KEYWORDS,
   SUGGESTED_UTTERANCES,
@@ -25,9 +26,10 @@ export const MOCK_CHILD_NAME = '문열';
 
 interface SceneResult {
   sceneOrder: number;
-  characterName: string;
+  // 내레이션 장면은 캐릭터가 없고, 아직 안 끝난 장면은 종료 사유가 없다 (실백엔드와 동일)
+  characterName: string | null;
   turnCount: number;
-  endReason: string;
+  endReason: string | null;
   detectedElements: ThinkingElement[];
 }
 
@@ -344,7 +346,7 @@ export function buildReport(sessionId: number): ReportData | null {
   return {
     sessionId,
     storyTitle: MOCK_STORY.title,
-    completedAt: '2026-08-08T12:00:00Z',
+    completedAt: session.status === 'COMPLETED' ? '2026-08-08T12:00:00Z' : null,
     elementSummary: {
       accumulated,
       totalRequired,
@@ -354,7 +356,19 @@ export function buildReport(sessionId: number): ReportData | null {
       empathy: score(CATEGORY.empathy),
       perspective: score(CATEGORY.perspective),
     },
-    scenes: session.perSceneResults,
+    // 실백엔드는 내레이션 장면까지 전부 준다 — 아직 안 끝난 장면은 null 로 채운다
+    scenes: ALL_SCENES.map((scene) => {
+      const done = session.perSceneResults.find((r) => r.sceneOrder === scene.sceneOrder);
+      return (
+        done ?? {
+          sceneOrder: scene.sceneOrder,
+          characterName: scene.characterName,
+          turnCount: 0,
+          endReason: null,
+          detectedElements: [],
+        }
+      );
+    }),
     representativeUtterances: childUtterances.slice(0, 3).map((m) => ({
       sceneOrder: DIALOGUE_SCENES.find((s) => s.sceneId === m.sceneId)?.sceneOrder ?? 0,
       text: m.text,

@@ -59,9 +59,13 @@ export interface Child {
   createdAt: string;
 }
 
+/**
+ * 등록·수정 모두 **birthYear** 로 보낸다 (2000~2030).
+ * 화면은 "나이"를 받고 보낼 때 환산한다 — 백엔드도 age = 올해 - birthYear 로 계산하므로 정확히 왕복한다
+ */
 export interface ChildUpsertRequest {
   name: string;
-  age: number;
+  birthYear: number;
 }
 
 // ---------- 이야기 (실측 확정) ----------
@@ -219,10 +223,12 @@ export interface CategoryScore {
   total: number;
 }
 
+// 실측 확정 (2026-08-13, dev 로컬). 아래 null 들은 전부 실제로 온다
 export interface ReportData {
   sessionId: number;
   storyTitle: string;
-  completedAt: string;
+  /** 완주 전에도 조회된다 — 그때는 null */
+  completedAt: string | null;
   elementSummary: {
     accumulated: ThinkingElement[];
     totalRequired: number;
@@ -232,11 +238,16 @@ export interface ReportData {
     empathy: CategoryScore;
     perspective: CategoryScore;
   };
+  /**
+   * 대화 장면만이 아니라 **내레이션 장면까지 전부** 온다(시드 기준 9개).
+   * 내레이션 장면은 characterName 이 null 이므로, 화면에서 걸러 써야 한다
+   */
   scenes: {
     sceneOrder: number;
-    characterName: string;
+    characterName: string | null;
     turnCount: number;
-    endReason: string;
+    /** 아직 끝나지 않은 장면은 null */
+    endReason: string | null;
     detectedElements: ThinkingElement[];
   }[];
   representativeUtterances: {

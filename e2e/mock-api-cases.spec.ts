@@ -89,7 +89,7 @@ test('아이 프로필: 시드 1명 조회, 추가는 MVP 제한 409, 수정은 
   expect(list.body.data[0].name).toBe('문열');
 
   // 실백엔드도 400을 준다 (409 아님)
-  const over = await api(page, '/children', json({ name: '둘째', age: 6 }, accessToken));
+  const over = await api(page, '/children', json({ name: '둘째', birthYear: 2020 }, accessToken));
   expect(over.status).toBe(400);
   expect(over.body.success).toBe(false);
 
@@ -173,8 +173,13 @@ test('세션 완주: 아무말만으로 MAX_TURNS 완료 후 추가 발화는 40
   expect(after.body.code).toBe('SESSION_002');
 
   const report = await api(page, `/reports/${sessionId}`, { headers: auth });
-  expect(report.body.data.scenes).toHaveLength(4);
-  expect(report.body.data.scenes.every((s: { endReason: string }) => s.endReason === 'MAX_TURNS')).toBe(true);
+  // 실백엔드는 내레이션 장면까지 전부 준다(9개) — 대화 장면만 걸러서 본다
+  type ReportScene = { characterName: string | null; endReason: string | null };
+  const scenes: ReportScene[] = report.body.data.scenes;
+  expect(scenes).toHaveLength(9);
+  const dialogues = scenes.filter((s) => s.characterName !== null);
+  expect(dialogues).toHaveLength(4);
+  expect(dialogues.every((s) => s.endReason === 'MAX_TURNS')).toBe(true);
 });
 
 test('TTS: 봉투 없는 audio/mpeg 바이너리를 반환한다', async ({ page }) => {

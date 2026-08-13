@@ -169,7 +169,7 @@ function DevConsole() {
       const pct = (c: { detected: unknown[]; total: number }) =>
         c.total === 0 ? 0 : Math.round((c.detected.length / c.total) * 100);
       log(
-        `리포트: 달성률 ${Math.round(s.achievementRate * 100)}% | 논리 ${pct(s.logic)}% 공감 ${pct(s.empathy)}% 관점 ${pct(s.perspective)}% | 장면 ${data.scenes.length}개`,
+        `리포트: 달성률 ${Math.round(s.achievementRate * 100)}% | 논리 ${pct(s.logic)}% 공감 ${pct(s.empathy)}% 관점 ${pct(s.perspective)}% | 대화 장면 ${data.scenes.filter((s) => s.characterName !== null).length}개`,
       );
     }
   };
