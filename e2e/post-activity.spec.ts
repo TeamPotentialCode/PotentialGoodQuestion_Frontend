@@ -17,13 +17,16 @@ async function enterOrder(page: Page): Promise<number> {
     window.__gqMock?.resetMockState();
   });
   await page.getByLabel('이메일').fill(DEMO.email);
-  await page.getByLabel('비밀번호').fill(DEMO.password);
+  await page.getByLabel('비밀번호', { exact: true }).fill(DEMO.password);
   await page.getByRole('button', { name: '로그인' }).click();
+  await page.waitForURL('**/children');
+  // 로그인 다음은 아이 선택 화면이다(CHILD-01)
+  await page.getByRole('button', { name: '이 아이로 시작하기' }).click();
   await page.waitForURL('**/home');
 
   await page.getByRole('link', { name: /방귀 뀌는 며느리/ }).first().click();
   await page.waitForURL('**/stories/1');
-  await page.getByRole('button', { name: '시작하기' }).click();
+  await page.getByRole('button', { name: '이야기 시작하기 →' }).click();
   await page.waitForURL(/\/play\/\d+$/);
   const sessionId = Number(page.url().split('/').pop());
 

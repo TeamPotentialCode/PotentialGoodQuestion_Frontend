@@ -4,11 +4,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useRequireAuth } from '@/features/auth/use-session';
-import { ChildPicker } from '@/features/child-profile/child-picker';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getHome } from '@/features/home/api';
 import { getStoryDetail, startSession } from '@/features/story/api';
-import { Screen, Stack, TouchTarget } from '@/shared/ui';
+import { useIntroAudio } from '@/features/story/use-intro-audio';
+import { Icon, ImageSlot, Screen, Stack, TouchTarget, TwoPane } from '@/shared/ui';
 
 export default function StoryDetailPage() {
   const router = useRouter();
@@ -24,9 +24,7 @@ export default function StoryDetailPage() {
     enabled: authenticated && Number.isFinite(storyId),
   });
 
-  // 백엔드는 세션을 재사용하지 않고 매번 새로 만든다. 진행 중인 세션이 있으면
-  // "시작하기" 대신 "이어하기"를 보여줘 중복 세션이 쌓이지 않게 한다.
-  // 세션 정보는 이야기 상세가 아니라 홈 응답에만 있어서 같은 쿼리를 공유한다
+  // 진행 중인 세션은 홈 응답에만 있다. 같은 쿼리를 공유해 중복 요청을 피한다
   const home = useQuery({
     queryKey: ['home', child.selected?.childId],
     queryFn: () => getHome(child.selected!.childId),
@@ -38,11 +36,12 @@ export default function StoryDetailPage() {
   const start = useMutation({
     mutationFn: () => startSession(storyId, child.selected!.childId),
     onSuccess: async (session) => {
-      // 홈의 이어하기가 즉시 반영되도록 캐시를 무효화한다
       await queryClient.invalidateQueries({ queryKey: ['home'] });
       router.push(`/play/${session.sessionId}`);
     },
   });
+
+  const intro = useIntroAudio(story.data?.introduction ?? '');
 
   if (!authenticated || story.isPending) {
     return (
@@ -68,73 +67,170 @@ export default function StoryDetailPage() {
   }
 
   const detail = story.data;
+  const noChild = child.list.length === 0;
 
   return (
-    <Screen scrollable className="py-10">
-      <Stack gap="lg" className="mx-auto w-full max-w-lg">
-        <h1 className="text-display font-bold text-ink">{detail.title}</h1>
-        <p className="text-body text-ink-soft">
-          {detail.difficulty} · 약 {detail.estimatedMinutes}분
-          {detail.topics.length > 0 && ` · ${detail.topics.join(' · ')}`}
-        </p>
+    <Screen scrollable className="py-4" data-testid="story-detail">
+      <Stack gap="lg" className="mx-auto w-full max-w-5xl">
+        <Stack direction="row" align="center" gap="md" className="border-b border-line pb-3">
+          <Link
+            href="/stories"
+            className="flex min-h-touch items-center gap-1 text-body text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+          >
+            <Icon name="back" className="size-5" />
+            뒤로
+          </Link>
+          <h1 className="flex-1 text-center text-body font-semibold text-ink">이야기 소개</h1>
+          <span aria-hidden className="min-w-16" />
+        </Stack>
 
-        <section aria-label="이야기 소개" className="flex flex-col gap-3 rounded-card bg-surface-raised p-4">
-          <p className="text-body text-ink">{detail.introduction}</p>
-          {detail.situation && <p className="text-body text-ink-soft">{detail.situation}</p>}
-          {detail.childRole && (
-            <div>
-              <h2 className="text-title font-semibold text-ink">아이의 역할</h2>
-              <p className="text-body text-ink-soft">{detail.childRole}</p>
-            </div>
-          )}
-        </section>
+        <TwoPane
+          left={
+            <Stack gap="md">
+              <ImageSlot src={detail.thumbnailUrl} label="이야기 대표 이미지" />
 
-        {child.list.length === 0 ? (
-          <Stack gap="sm" align="start">
-            <p className="text-body text-ink-soft">이야기를 시작하려면 아이를 먼저 등록해 주세요.</p>
-            <Link href="/children">
-              <TouchTarget>아이 등록하기</TouchTarget>
-            </Link>
-          </Stack>
-        ) : (
-          <Stack gap="md">
-            <ChildPicker list={child.list} selected={child.selected} onSelect={child.select} />
-            {start.isError && (
-              <p role="alert" className="text-body text-ink">
-                이야기를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.
-              </p>
-            )}
-            {inProgress ? (
-              <Stack gap="sm">
-                <p className="text-body text-ink-soft">
-                  {inProgress.currentSceneOrder !== null
-                    ? `${inProgress.currentSceneOrder}번째 장면까지 진행했어요.`
-                    : '이미 시작한 이야기예요.'}
-                </p>
-                <Link href={`/play/${inProgress.sessionId}`}>
-                  <TouchTarget size="lg" className="w-full">
-                    이어하기
-                  </TouchTarget>
-                </Link>
+              <Stack direction="row" gap="sm" justify="center">
+                <SideAction
+                  icon="speaker"
+                  label={intro.state === 'playing' ? '멈추기' : '이야기 듣기'}
+                  onClick={intro.toggle}
+                  disabled={intro.state === 'loading' || !detail.introduction}
+                />
+                <SideAction
+                  icon="chat"
+                  label="캐릭터와 말하기"
+                  onClick={() => (inProgress ? router.push(`/play/${inProgress.sessionId}`) : start.mutate())}
+                  disabled={noChild || start.isPending || home.isPending}
+                />
+                {/*
+                 * 세션 재시작 API 가 없다. 진행 중이면 새로 만들어도 그 세션이 그대로 돌아와
+                 * "처음부터" 가 되지 않으므로 그때는 비활성으로 둔다
+                 */}
+                <SideAction
+                  icon="refresh"
+                  label="다시 만들어 보기"
+                  onClick={() => start.mutate()}
+                  disabled={noChild || inProgress !== null || start.isPending}
+                  title={inProgress ? '지금은 이어서 할 수 있어요' : undefined}
+                />
               </Stack>
-            ) : (
-              <TouchTarget
-                size="lg"
-                disabled={start.isPending || child.selected === undefined || home.isPending}
-                onClick={() => start.mutate()}
-              >
-                {start.isPending ? '시작하는 중…' : '시작하기'}
-              </TouchTarget>
-            )}
-          </Stack>
-        )}
+            </Stack>
+          }
+          right={
+            <Stack gap="md">
+              <h2 className="text-display font-bold text-ink">{detail.title}</h2>
+              <p className="text-body text-ink-soft">{detail.summary}</p>
 
-        <Link href="/home">
-          <TouchTarget look="outline" className="w-full">
-            홈으로
-          </TouchTarget>
-        </Link>
+              <Stack direction="row" gap="sm" className="flex-wrap">
+                <Badge icon="clock">{detail.estimatedMinutes}분</Badge>
+                <Badge icon="book">{detail.difficulty}</Badge>
+              </Stack>
+
+              {detail.topics.length > 0 && (
+                <ul className="flex flex-wrap gap-2">
+                  {detail.topics.map((topic) => (
+                    <li
+                      key={topic}
+                      className="rounded-full bg-surface-raised px-3 py-1 text-caption text-ink"
+                    >
+                      {topic}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="border-t border-line pt-4">
+                <h3 className="text-title font-bold text-ink">어떤 이야기일까?</h3>
+                <p className="pt-2 text-body text-ink">{detail.introduction}</p>
+                {detail.situation && (
+                  <p className="pt-1 text-body text-ink-soft">{detail.situation}</p>
+                )}
+              </div>
+
+              {detail.childRole && (
+                <div className="rounded-card bg-surface-raised px-5 py-4">
+                  <h3 className="text-title font-bold text-ink">이 이야기에서 너는?</h3>
+                  <p className="pt-2 text-body font-semibold text-ink">{detail.childRole}</p>
+                  <p className="text-caption text-ink-soft">
+                    캐릭터가 네 이야기를 듣고 다시 질문을 해 줄 거예요.
+                  </p>
+                </div>
+              )}
+            </Stack>
+          }
+        />
+
+        <Stack gap="sm" align="center" className="pt-2">
+          {start.isError && (
+            <p role="alert" className="text-body text-ink">
+              이야기를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.
+            </p>
+          )}
+
+          {noChild ? (
+            <Stack gap="sm" align="center">
+              <p className="text-body text-ink-soft">
+                이야기를 시작하려면 아이를 먼저 등록해 주세요.
+              </p>
+              <Link href="/children">
+                <TouchTarget>아이 등록하기</TouchTarget>
+              </Link>
+            </Stack>
+          ) : inProgress ? (
+            <Link href={`/play/${inProgress.sessionId}`} className="w-full max-w-md">
+              <TouchTarget size="lg" className="w-full">
+                이어하기 →
+              </TouchTarget>
+            </Link>
+          ) : (
+            <TouchTarget
+              size="lg"
+              className="w-full max-w-md"
+              disabled={start.isPending || child.selected === undefined || home.isPending}
+              onClick={() => start.mutate()}
+            >
+              {start.isPending ? '시작하는 중…' : '이야기 시작하기 →'}
+            </TouchTarget>
+          )}
+        </Stack>
       </Stack>
     </Screen>
+  );
+}
+
+/** 대표 이미지 아래 보조 동작 3개 */
+function SideAction({
+  icon,
+  label,
+  onClick,
+  disabled,
+  title,
+}: {
+  icon: 'speaker' | 'chat' | 'refresh';
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="flex min-h-touch flex-1 flex-col items-center justify-center gap-1 rounded-card border border-line bg-surface px-2 py-3 text-caption font-semibold text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft disabled:opacity-40"
+    >
+      <Icon name={icon} className="size-5" />
+      {label}
+    </button>
+  );
+}
+
+function Badge({ icon, children }: { icon: 'clock' | 'book'; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-card border border-line px-3 py-1 text-caption text-ink">
+      <Icon name={icon} className="size-4" />
+      {children}
+    </span>
   );
 }

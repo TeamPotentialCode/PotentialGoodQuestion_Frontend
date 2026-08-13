@@ -14,7 +14,7 @@ export function LoginForm() {
 
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: () => router.replace('/home'),
+    onSuccess: () => router.replace('/children'),
   });
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {

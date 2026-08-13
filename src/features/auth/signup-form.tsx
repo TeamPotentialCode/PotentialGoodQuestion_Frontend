@@ -15,7 +15,7 @@ export function SignupForm() {
   const mutation = useMutation({
     mutationFn: signup,
     // 가입 응답이 곧바로 토큰을 주므로 별도 로그인 없이 다음 단계로 보낸다
-    onSuccess: () => router.replace('/home'),
+    onSuccess: () => router.replace('/children'),
   });
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {

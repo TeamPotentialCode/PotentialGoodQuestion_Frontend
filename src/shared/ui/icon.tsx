@@ -11,7 +11,16 @@ type IconName =
   | 'grip'
   | 'check'
   | 'home'
-  | 'book';
+  | 'book'
+  | 'eye'
+  | 'eye-off'
+  | 'back'
+  | 'chevron-down'
+  | 'star'
+  | 'chat'
+  | 'refresh'
+  | 'bookmark'
+  | 'clock';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;
@@ -90,6 +99,35 @@ const paths: Record<IconName, React.ReactNode> = {
     <>
       <path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 1-2-2V5z" />
       <path d="M20 5a2 2 0 0 0-2-2h-5v18h5a2 2 0 0 0 2-2V5z" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  'eye-off': (
+    <>
+      <path d="M2 12s3.6-6 10-6c1.6 0 3 .4 4.2 1M22 12s-3.6 6-10 6c-1.6 0-3-.4-4.2-1" />
+      <path d="m3 3 18 18" />
+    </>
+  ),
+  back: <path d="m15 5-7 7 7 7" />,
+  'chevron-down': <path d="m6 9 6 6 6-6" />,
+  star: <path d="m12 4 2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8z" />,
+  chat: <path d="M20 5v9a2 2 0 0 1-2 2H9l-4 3v-3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z" />,
+  refresh: (
+    <>
+      <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+      <path d="M20 4v4h-4" />
+    </>
+  ),
+  bookmark: <path d="M6 4h12v16l-6-4-6 4z" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </>
   ),
   check: (

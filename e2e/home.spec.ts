@@ -18,30 +18,37 @@ async function startFresh(page: Page, { withoutChildren = false } = {}) {
   }, withoutChildren);
 
   await page.getByLabel('이메일').fill(DEMO.email);
-  await page.getByLabel('비밀번호').fill(DEMO.password);
+  await page.getByLabel('비밀번호', { exact: true }).fill(DEMO.password);
   await page.getByRole('button', { name: '로그인' }).click();
+  // 로그인 다음은 아이 선택 화면이다(CHILD-01)
+  await page.waitForURL('**/children');
+  if (withoutChildren) return; // 고를 아이가 없으면 여기서 멈춘다 — 시작 버튼이 비활성이다
+  await page.getByRole('button', { name: '이 아이로 시작하기' }).click();
   await page.waitForURL('**/home');
 }
 
 test('아이가 없으면 등록 안내만 보이고 이야기 영역은 그리지 않는다', async ({ page }) => {
   await startFresh(page, { withoutChildren: true });
+  // 아이 선택 화면에서는 고를 게 없다 — 홈으로 직접 들어가 안내를 확인한다
+  await expect(page.getByRole('button', { name: '이 아이로 시작하기' })).toBeDisabled();
+  await page.goto('/home');
 
-  await expect(page.getByText('아직 등록된 아이가 없어요.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '먼저 아이를 등록해 주세요' })).toBeVisible();
   await expect(page.getByRole('link', { name: '아이 등록하기' })).toBeVisible();
   // 아이가 없으면 홈 조회 자체를 하지 않는다
-  await expect(page.getByRole('heading', { name: '추천 이야기' })).toBeHidden();
-  await expect(page.getByRole('heading', { name: '이어하기' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: '오늘의 추천 이야기' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: '이어서 이야기하기' })).toBeHidden();
 });
 
 test('아이가 있으면 이어하기 없음과 추천 이야기를 보여준다', async ({ page }) => {
   await startFresh(page);
 
-  await expect(page.getByRole('heading', { name: '이어하기' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '이어서 이야기하기' })).toBeVisible();
   await expect(page.getByText('진행 중인 이야기가 없어요.')).toBeVisible();
 
-  await expect(page.getByRole('heading', { name: '추천 이야기' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘의 추천 이야기' })).toBeVisible();
   await expect(page.getByRole('listitem').filter({ hasText: '방귀 뀌는 며느리' })).toBeVisible();
-  await expect(page.getByText('보통 · 약 15분')).toBeVisible();
+  await expect(page.getByText(/난이도: 보통/)).toBeVisible();
 });
 
 test('진행 중 세션이 있으면 이어하기 카드가 뜬다', async ({ page }) => {
@@ -58,12 +65,12 @@ test('진행 중 세션이 있으면 이어하기 카드가 뜬다', async ({ pa
       body: JSON.stringify({ childId: 1 }),
     });
   });
-  // 아이 관리로 갔다가 돌아오면 홈 쿼리가 다시 실행된다
-  await page.getByRole('link', { name: '아이 관리' }).click();
-  await page.waitForURL('**/children');
-  await page.getByRole('link', { name: '홈으로' }).click();
-  await page.waitForURL('**/home');
+  // 화면 안 이동만으로는 홈 쿼리가 다시 안 돈다(staleTime 30초).
+  // 목 세션은 저장소에 남으므로 새로고침해도 살아 있다 — 이걸로 확실히 다시 읽힌다
+  await page.reload();
 
   await expect(page.getByText('진행 중인 이야기가 없어요.')).toBeHidden();
-  await expect(page.getByText('3번째 장면까지 진행했어요.')).toBeVisible();
+  // 시안의 이어하기 카드 — 제목·진행도·이어서 하기
+  await expect(page.getByRole('link', { name: '이어서 하기' })).toBeVisible();
+  await expect(page.getByText(/장면 1 \/ 4/)).toBeVisible();
 });

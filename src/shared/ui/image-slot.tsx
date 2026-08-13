@@ -8,6 +8,8 @@ interface ImageSlotProps {
   /** 이미지가 아직 없을 때 자리에 적는 설명 */
   label: string;
   src?: string | null;
+  /** thumb 은 목록·카드 안에 들어가는 작은 자리 */
+  size?: 'full' | 'thumb';
   className?: string;
 }
 
@@ -16,13 +18,14 @@ interface ImageSlotProps {
  * 아이 화면에 깨진 이미지 아이콘이 뜨는 것보다 낫다.
  * 폰 세로에서는 낮게, 태블릿 가로에서는 높게 — 폰에서 조작부가 화면 밖으로 밀리지 않게 한다
  */
-export function ImageSlot({ label, src = null, className }: ImageSlotProps) {
+export function ImageSlot({ label, src = null, size = 'full', className }: ImageSlotProps) {
   const [failed, setFailed] = useState(false);
 
   return (
     <div
       className={cn(
-        'flex min-h-40 items-center justify-center overflow-hidden rounded-card border border-line bg-surface md:min-h-80',
+        'flex items-center justify-center overflow-hidden rounded-card border border-line bg-surface',
+        size === 'full' ? 'min-h-40 md:min-h-80' : 'min-h-24 w-32 shrink-0 md:min-h-28 md:w-40',
         className,
       )}
     >

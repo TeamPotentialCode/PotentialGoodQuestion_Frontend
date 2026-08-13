@@ -17,8 +17,12 @@ async function startFresh(page: Page, { withoutChildren = false } = {}) {
   }, withoutChildren);
 
   await page.getByLabel('이메일').fill(DEMO.email);
-  await page.getByLabel('비밀번호').fill(DEMO.password);
+  await page.getByLabel('비밀번호', { exact: true }).fill(DEMO.password);
   await page.getByRole('button', { name: '로그인' }).click();
+  // 로그인 다음은 아이 선택 화면이다(CHILD-01)
+  await page.waitForURL('**/children');
+  if (withoutChildren) return; // 고를 아이가 없으면 여기서 멈춘다 — 시작 버튼이 비활성이다
+  await page.getByRole('button', { name: '이 아이로 시작하기' }).click();
   await page.waitForURL('**/home');
 }
 
@@ -37,8 +41,13 @@ test('홈에서 이야기를 누르면 상세가 열리고 소개를 보여준�
 
   await expect(page.getByRole('heading', { name: '방귀 뀌는 며느리' })).toBeVisible();
   await expect(page.getByText('옛날 옛날, 방귀를 아주 크게 뀌는 며느리가 살았어요.')).toBeVisible();
-  await expect(page.getByRole('heading', { name: '아이의 역할' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '시작하기' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '어떤 이야기일까?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '이 이야기에서 너는?' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '이야기 시작하기 →' })).toBeVisible();
+  // 시안의 보조 동작 3개
+  await expect(page.getByRole('button', { name: '이야기 듣기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '캐릭터와 말하기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '다시 만들어 보기' })).toBeVisible();
 });
 
 test('시작하기를 누르면 세션이 만들어지고 플레이 화면으로 간다', async ({ page }) => {
@@ -46,7 +55,7 @@ test('시작하기를 누르면 세션이 만들어지고 플레이 화면으로
   await page.getByRole('link', { name: /방귀 뀌는 며느리/ }).first().click();
   await page.waitForURL('**/stories/1');
 
-  await page.getByRole('button', { name: '시작하기' }).click();
+  await page.getByRole('button', { name: '이야기 시작하기 →' }).click();
   await page.waitForURL(/\/play\/\d+$/);
 
   await expect(page.getByRole('heading', { name: '방귀 뀌는 며느리' })).toBeVisible();
@@ -59,7 +68,7 @@ test('이미 진행 중이면 시작하기 대신 이어하기를 보여준다',
   await startFresh(page);
   await page.getByRole('link', { name: /방귀 뀌는 며느리/ }).first().click();
   await page.waitForURL('**/stories/1');
-  await page.getByRole('button', { name: '시작하기' }).click();
+  await page.getByRole('button', { name: '이야기 시작하기 →' }).click();
   await page.waitForURL(/\/play\/\d+$/);
   const firstSession = page.url();
 
@@ -69,10 +78,12 @@ test('이미 진행 중이면 시작하기 대신 이어하기를 보여준다',
   await page.getByRole('link', { name: /방귀 뀌는 며느리/ }).last().click();
   await page.waitForURL('**/stories/1');
 
-  await expect(page.getByRole('link', { name: '이어하기' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '시작하기' })).toBeHidden();
+  await expect(page.getByRole('link', { name: '이어하기 →' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '이야기 시작하기 →' })).toBeHidden();
+  // 진행 중에는 세션 재시작 API 가 없어 "다시 만들어 보기" 를 열어두면 안 된다
+  await expect(page.getByRole('button', { name: '다시 만들어 보기' })).toBeDisabled();
 
-  await page.getByRole('link', { name: '이어하기' }).click();
+  await page.getByRole('link', { name: '이어하기 →' }).click();
   await page.waitForURL(/\/play\/\d+$/);
   expect(page.url()).toBe(firstSession); // 새 세션을 만들지 않았다
 });
@@ -83,6 +94,6 @@ test('아이가 없으면 시작 대신 등록 안내를 보여준다', async ({
   await page.goto('/stories/1');
 
   await expect(page.getByText('이야기를 시작하려면 아이를 먼저 등록해 주세요.')).toBeVisible();
-  await expect(page.getByRole('button', { name: '시작하기' })).toBeHidden();
+  await expect(page.getByRole('button', { name: '이야기 시작하기 →' })).toBeHidden();
   await expect(page.getByRole('link', { name: '아이 등록하기' })).toBeVisible();
 });
