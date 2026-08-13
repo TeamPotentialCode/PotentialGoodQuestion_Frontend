@@ -6,8 +6,19 @@ import type { Phase } from '@/core/play-session/types';
 import { submitUtterance, synthesize, transcribe } from '@/features/play/api';
 import { loadScene, type NarrationPage } from '@/features/play/scene-source';
 import { useAudioOwnership } from '@/features/play/useAudioOwnership';
+import { useMicLevel } from '@/features/play/use-mic-level';
 import { usePlayStore } from '@/features/play/usePlayStore';
 import { getSession } from '@/features/story/api';
+
+/**
+ * 마이크·STT 가 왜 실패했는지는 화면 문구만으로는 알 수 없다.
+ * 개발 모드에서만 콘솔에 남긴다 — 프로덕션 번들에는 들어가지 않는다
+ */
+function diagnose(what: string, detail: Record<string, unknown>): void {
+  if (process.env.NODE_ENV === 'development') {
+    console.info(`[음성] ${what}`, detail);
+  }
+}
 
 interface SceneView {
   characterName: string;
@@ -127,8 +138,20 @@ export function usePlaySession(sessionId: number) {
         case 'recording': {
           try {
             await audio.startMic();
-          } catch {
-            dispatch({ type: 'STT_FAILED' });
+          } catch (error) {
+            // 예전에는 STT_FAILED 를 보냈는데 transition 이 transcribing 에서만 받아서
+            // 신호가 버려졌다 — 마이크가 막혀도 화면이 "듣고 있어요…" 에 그대로 머물렀다
+            const name = error instanceof DOMException ? error.name : '';
+            diagnose('마이크를 켜지 못함', { name });
+            dispatch({
+              type: 'MIC_FAILED',
+              reason:
+                name === 'NotAllowedError'
+                  ? 'permission'
+                  : name === 'NotFoundError' || name === 'OverconstrainedError'
+                    ? 'no-device'
+                    : 'unknown',
+            });
           }
           return;
         }
@@ -136,18 +159,21 @@ export function usePlaySession(sessionId: number) {
         case 'transcribing': {
           try {
             const blob = await audio.stopMic();
+            diagnose('녹음 결과', { size: blob?.size ?? 0, type: blob?.type ?? '없음' });
             if (!blob || blob.size === 0) {
-              dispatch({ type: 'STT_FAILED' });
+              dispatch({ type: 'STT_FAILED', reason: 'silent' });
               return;
             }
             const result = await transcribe(blob);
+            diagnose('STT 응답', { text: result.text });
             if (!result.text.trim()) {
-              dispatch({ type: 'STT_FAILED' });
+              dispatch({ type: 'STT_FAILED', reason: 'unclear' });
               return;
             }
             dispatch({ type: 'STT_SUCCEEDED', transcript: result });
-          } catch {
-            dispatch({ type: 'STT_FAILED' });
+          } catch (error) {
+            diagnose('STT 실패', { error: String(error) });
+            dispatch({ type: 'STT_FAILED', reason: 'unclear' });
           }
           return;
         }
@@ -228,6 +254,8 @@ export function usePlaySession(sessionId: number) {
     })();
   }, [audio, scene?.sceneDescription]);
 
+  const micLevel = useMicLevel(state.phase.tag === 'recording', audio.micLevel);
+
   // 지금 보여줄 내레이션 한 장 (narrating 이 아니면 null)
   const narrationPage =
     state.phase.tag === 'narrating' ? (scene?.narration[state.phase.sentenceIndex] ?? null) : null;
@@ -238,6 +266,7 @@ export function usePlaySession(sessionId: number) {
     scene,
     narrationPage,
     characterLine,
+    micLevel,
     session,
     replayNarration,
     replaySceneDescription,

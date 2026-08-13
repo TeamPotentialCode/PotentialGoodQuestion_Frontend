@@ -23,6 +23,8 @@ interface PlayStageProps {
   characterLine: string;
   /** reviewing 단계에서 "이렇게 말했나요?" 로 보여줄 텍스트 */
   transcript: string | null;
+  /** 녹음 중 마이크 입력 크기 (0~1) */
+  micLevel: number;
   onAction: (event: PlayEvent) => void;
   onReplayScene: () => void;
   onReplayLine: () => void;
@@ -43,6 +45,7 @@ export function PlayStage({
   imageUrl,
   characterLine,
   transcript,
+  micLevel,
   onAction,
   onReplayScene,
   onReplayLine,
@@ -100,9 +103,13 @@ export function PlayStage({
           )}
 
           {phase.tag === 'recording' && (
-            <p className="text-body text-ink-soft" aria-live="polite">
-              듣고 있어요…
-            </p>
+            <Stack gap="sm" align="center">
+              <p className="text-body text-ink-soft" aria-live="polite">
+                듣고 있어요…
+              </p>
+              {/* 소리가 실제로 들어오는지 눈으로 보이게 한다. 정보는 위 글자가 이미 전달한다 */}
+              <MicLevel level={micLevel} />
+            </Stack>
           )}
 
           {phase.tag === 'transcribing' && (
@@ -155,6 +162,25 @@ export function PlayStage({
         </Stack>
       }
     />
+  );
+}
+
+/** 마이크 입력 막대 5칸 — 소리가 클수록 많이 켜진다 */
+function MicLevel({ level }: { level: number }) {
+  const lit = Math.round(level * 5);
+  return (
+    <span aria-hidden className="flex items-end gap-1.5" data-testid="mic-level" data-level={lit}>
+      {[1, 2, 3, 4, 5].map((step) => (
+        <span
+          key={step}
+          className={cn(
+            'w-2.5 rounded-full duration-(--motion-fast)',
+            step <= lit ? 'bg-ink' : 'bg-line',
+          )}
+          style={{ height: `${8 + step * 5}px` }}
+        />
+      ))}
+    </span>
   );
 }
 

@@ -58,6 +58,9 @@ export function useAudioOwnership() {
     return recording.stop();
   }, []);
 
+  /** 지금 마이크로 들어오는 소리 크기 (0~1). 녹음 중이 아니면 0 */
+  const micLevel = useCallback(() => recordingRef.current?.level() ?? 0, []);
+
   /** 화면을 벗어날 때 남은 자원을 정리한다 */
   const releaseAll = useCallback(() => {
     stopPlayback();
@@ -69,7 +72,7 @@ export function useAudioOwnership() {
   // 반환 객체를 고정한다. 매 렌더마다 새 객체를 주면 이걸 의존성으로 쓰는 정리 이펙트가
   // 렌더마다 재실행되어 녹음이 곧바로 끊긴다
   return useMemo(
-    () => ({ play, stopPlayback, startMic, stopMic, releaseAll }),
-    [play, stopPlayback, startMic, stopMic, releaseAll],
+    () => ({ play, stopPlayback, startMic, stopMic, micLevel, releaseAll }),
+    [play, stopPlayback, startMic, stopMic, micLevel, releaseAll],
   );
 }

@@ -56,7 +56,13 @@ export type PlayEvent =
   | { type: 'NARRATION_SENTENCE_ENDED' }
   | { type: 'SPEECH_ENDED' }
   | { type: 'STT_SUCCEEDED'; transcript: Transcript }
-  | { type: 'STT_FAILED' }
+  /**
+   * silent: 녹음이 비어 있었다(마이크에 소리가 안 들어옴)
+   * unclear: 음성은 들어왔는데 인식이 안 됐다 — 이것만 3회 누적 안내 대상이다
+   */
+  | { type: 'STT_FAILED'; reason?: 'silent' | 'unclear' }
+  /** 마이크를 켜지 못했다. recording 에서만 유효하다 */
+  | { type: 'MIC_FAILED'; reason: 'permission' | 'no-device' | 'unknown' }
   | { type: 'ANALYSIS_SUCCEEDED'; outcome: UtteranceOutcome }
   | { type: 'ANALYSIS_FAILED' };
 
@@ -88,3 +94,14 @@ export const STT_RETRY_COPY = '잘 안 들렸어요. 한 번만 더 말해 줄�
 export const STT_QUIET_COPY = '조용한 곳으로 옮겨서 다시 해 볼까요?';
 export const ANALYSIS_RETRY_COPY = '잠깐 문제가 생겼어요. 다시 보내 볼까요?';
 export const STT_FAILURE_THRESHOLD = 3;
+
+/*
+ * 마이크 자체가 안 켜졌을 때의 문구.
+ * 예전에는 이 경우에도 "잘 안 들렸어요" 가 떠서, 마이크가 막혀 있는데 아이 목소리 탓으로 안내했다.
+ * 아이가 아니라 어른이 조치해야 하는 상황이라 문구를 따로 둔다
+ */
+export const MIC_PERMISSION_COPY = '마이크를 쓸 수 있게 허용해 주세요.';
+export const MIC_NO_DEVICE_COPY = '마이크를 찾지 못했어요. 연결을 확인해 줄래요?';
+export const MIC_UNKNOWN_COPY = '마이크를 켜지 못했어요. 다시 해볼까요?';
+/** 녹음은 됐는데 소리가 하나도 안 들어온 경우 */
+export const STT_SILENT_COPY = '소리가 들어오지 않았어요. 마이크를 확인해 줄래요?';

@@ -85,6 +85,7 @@ export default function PlayPage() {
             imageUrl={scene?.imageUrl ?? null}
             characterLine={characterLine}
             transcript={state.transcript?.text ?? null}
+            micLevel={play.micLevel}
             onAction={dispatch}
             onReplayScene={play.replaySceneDescription}
             onReplayLine={play.replayCharacterLine}

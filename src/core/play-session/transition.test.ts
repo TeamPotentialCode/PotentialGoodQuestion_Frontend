@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { transition } from './transition';
 import {
   INITIAL_STATE,
+  MIC_NO_DEVICE_COPY,
+  MIC_PERMISSION_COPY,
+  STT_SILENT_COPY,
   type PlayEvent,
   type PlayState,
   type ScenePlan,
@@ -88,6 +91,48 @@ describe('transition', () => {
   it('4-2. narrating이 아닐 때 TAP_NEXT는 무시된다', () => {
     const opening = run([{ type: 'TAP_UNLOCK' }, { type: 'SCENE_LOADED', scene: scene(0) }]);
     expect(transition(opening, { type: 'TAP_NEXT' })).toBe(opening);
+  });
+
+  it('4-3. 마이크를 못 켜면 recording 에서 이유별 문구와 함께 error 로 간다', () => {
+    const recording = run([
+      { type: 'TAP_UNLOCK' },
+      { type: 'SCENE_LOADED', scene: scene(0) },
+      { type: 'SPEECH_ENDED' },
+      { type: 'TAP_SPEAK' },
+    ]);
+    expect(recording.phase).toEqual({ tag: 'recording' });
+
+    const denied = transition(recording, { type: 'MIC_FAILED', reason: 'permission' });
+    expect(denied.phase).toMatchObject({ tag: 'error', message: MIC_PERMISSION_COPY });
+    // 마이크 문제는 아이 잘못이 아니다 — 연속 실패로 세지 않는다
+    expect(denied.consecutiveFailures).toBe(0);
+    // "다시 시도"가 녹음으로 돌아가야 한다
+    expect(transition(denied, { type: 'TAP_RETRY' }).phase).toEqual({ tag: 'recording' });
+
+    expect(
+      transition(recording, { type: 'MIC_FAILED', reason: 'no-device' }).phase,
+    ).toMatchObject({ message: MIC_NO_DEVICE_COPY });
+  });
+
+  it('4-4. recording 이 아닐 때 MIC_FAILED 는 무시된다', () => {
+    const opening = run([{ type: 'TAP_UNLOCK' }, { type: 'SCENE_LOADED', scene: scene(0) }]);
+    expect(transition(opening, { type: 'MIC_FAILED', reason: 'permission' })).toBe(opening);
+  });
+
+  it('4-5. 소리가 안 들어온 실패는 3회 누적 안내로 번지지 않는다', () => {
+    let state = run([
+      { type: 'TAP_UNLOCK' },
+      { type: 'SCENE_LOADED', scene: scene(0) },
+      { type: 'SPEECH_ENDED' },
+    ]);
+    for (let i = 0; i < 3; i += 1) {
+      state = transition(state, { type: 'TAP_SPEAK' });
+      state = transition(state, { type: 'TAP_SEND' });
+      state = transition(state, { type: 'STT_FAILED', reason: 'silent' });
+      expect(state.phase).toMatchObject({ tag: 'error', message: STT_SILENT_COPY });
+      expect(state.consecutiveFailures).toBe(0);
+      state = transition(state, { type: 'TAP_RETRY' });
+    }
   });
 
   it('5. opening 재생 종료 시 awaitingChild가 된다', () => {

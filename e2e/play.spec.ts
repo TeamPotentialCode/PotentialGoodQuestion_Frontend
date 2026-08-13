@@ -198,3 +198,30 @@ test('음성 인식에 실패하면 안내가 뜨고 다시 시도할 수 있다
   await page.getByRole('button', { name: '다시 시도' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'recording');
 });
+
+test('마이크를 못 켜면 그 자리에서 알려준다', async ({ page }) => {
+  // 설정의 --use-fake-ui-for-media-stream 이 권한을 자동 허용하므로
+  // 브라우저 권한으로는 거부를 만들 수 없다. getUserMedia 를 직접 거부시킨다.
+  // 예전에는 이 실패 신호가 버려져서 화면이 "듣고 있어요…" 에 그대로 머물렀다
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () =>
+      Promise.reject(new DOMException('Permission denied', 'NotAllowedError'));
+  });
+  await enterPlay(page);
+  await unlockAndWaitTurn(page);
+
+  await page.getByRole('button', { name: '말하기' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'error', { timeout: 15000 });
+  await expect(page.getByText('마이크를 쓸 수 있게 허용해 주세요.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '다시 시도' })).toBeVisible();
+});
+
+test('녹음 중에는 마이크 입력 크기가 보인다', async ({ page }) => {
+  await enterPlay(page);
+  await unlockAndWaitTurn(page);
+
+  await page.getByRole('button', { name: '말하기' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording');
+  // 소리가 들어오는지 눈으로 알 수 있어야 한다 (가짜 장치라 값 자체는 단언하지 않는다)
+  await expect(page.getByTestId('mic-level')).toBeVisible();
+});

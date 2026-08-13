@@ -1,8 +1,12 @@
 import {
   ANALYSIS_RETRY_COPY,
+  MIC_NO_DEVICE_COPY,
+  MIC_PERMISSION_COPY,
+  MIC_UNKNOWN_COPY,
   STT_FAILURE_THRESHOLD,
   STT_QUIET_COPY,
   STT_RETRY_COPY,
+  STT_SILENT_COPY,
   type PlayEvent,
   type PlayState,
 } from './types';
@@ -82,8 +86,30 @@ export function transition(state: PlayState, event: PlayEvent): PlayState {
         phase: { tag: 'reviewing' },
       };
 
+    // 마이크가 안 켜진 것은 아이 잘못이 아니다.
+    // 연속 실패 카운터를 올리지 않아서 "조용한 곳으로 옮겨서" 안내로 번지지 않게 한다
+    case 'MIC_FAILED': {
+      if (phase.tag !== 'recording') return state;
+      const message =
+        event.reason === 'permission'
+          ? MIC_PERMISSION_COPY
+          : event.reason === 'no-device'
+            ? MIC_NO_DEVICE_COPY
+            : MIC_UNKNOWN_COPY;
+      // failureSource 를 stt 로 두면 "다시 시도"가 녹음으로 돌아간다
+      return { ...state, failureSource: 'stt', phase: { tag: 'error', message, attempt: 1 } };
+    }
+
     case 'STT_FAILED': {
       if (phase.tag !== 'transcribing') return state;
+      // 소리가 아예 안 들어온 것도 아이 잘못이 아니라 장치 문제다 — 카운터를 올리지 않는다
+      if (event.reason === 'silent') {
+        return {
+          ...state,
+          failureSource: 'stt',
+          phase: { tag: 'error', message: STT_SILENT_COPY, attempt: 1 },
+        };
+      }
       const attempt = state.consecutiveFailures + 1;
       return {
         ...state,
