@@ -82,6 +82,12 @@ export interface PlayState {
   failureSource: 'stt' | 'analysis' | null; // TAP_RETRY 분기용
   /** 캐릭터 대사가 끝나면 띄울 미션. 응답이 왔을 때가 아니라 대사가 끝났을 때 보여준다 */
   pendingMission: MissionType | null;
+  /**
+   * 이미 보여준 미션. 백엔드는 조건이 유지되는 동안 **매 턴** showMission=true 를
+   * 다시 보낸다(실백엔드 완주에서 미션 6회 확인) — 같은 미션은 한 번만 보여준다.
+   * 미션1·미션2 는 각각 다른 장면에 붙어 있어 세션 전체 기준으로 기억해도 안전하다
+   */
+  shownMissions: MissionType[];
 }
 
 export const INITIAL_STATE: PlayState = {
@@ -92,6 +98,7 @@ export const INITIAL_STATE: PlayState = {
   completion: null,
   failureSource: null,
   pendingMission: null,
+  shownMissions: [],
 };
 
 // Idempotency-Key는 core 밖에서 관리한다 — UUID 생성은 부수효과이고 전이가 분기하지 않는다.

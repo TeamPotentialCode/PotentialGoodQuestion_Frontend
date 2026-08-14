@@ -67,15 +67,17 @@ export function transition(state: PlayState, event: PlayEvent): PlayState {
         };
       }
       // 백엔드가 미션을 켜라고 했으면 캐릭터 대사가 끝난 지금 보여준다.
-      // 응답이 온 순간이 아니라 대사가 끝난 뒤여야 아이가 대사를 놓치지 않는다
-      if (state.pendingMission !== null) {
+      // 응답이 온 순간이 아니라 대사가 끝난 뒤여야 아이가 대사를 놓치지 않는다.
+      // 같은 미션 신호는 조건이 유지되는 동안 매 턴 반복되므로 한 번만 보여준다
+      if (state.pendingMission !== null && !state.shownMissions.includes(state.pendingMission)) {
         return {
           ...state,
+          shownMissions: [...state.shownMissions, state.pendingMission],
           pendingMission: null,
           phase: { tag: 'mission', missionType: state.pendingMission },
         };
       }
-      return { ...state, phase: { tag: 'awaitingChild' } };
+      return { ...state, pendingMission: null, phase: { tag: 'awaitingChild' } };
     }
 
     // 미션을 읽고 닫으면 아이 차례 — 화면이 마이크를 저절로 켠다

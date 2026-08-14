@@ -1,17 +1,26 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clearTokens } from '@/core/api/auth-token';
 import { useRequireAuth } from '@/features/auth/use-session';
 import { AppHeader } from '@/features/child-profile/app-header';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
+import { getGrowth } from '@/features/wordbook/api';
+import { ElementRadar } from '@/features/wordbook/element-radar';
 import { Icon, Screen, Stack, TabBar, TouchTarget } from '@/shared/ui';
 
 export default function MyPage() {
   const authenticated = useRequireAuth();
   const child = useSelectedChild(authenticated);
   const router = useRouter();
+
+  const growth = useQuery({
+    queryKey: ['growth', child.selected?.childId],
+    queryFn: () => getGrowth(child.selected!.childId),
+    enabled: authenticated && child.selected !== undefined,
+  });
 
   if (!authenticated) {
     return (
@@ -53,6 +62,24 @@ export default function MyPage() {
             </Link>
           </Stack>
         </Stack>
+
+        {/* 사고 요소 성장 레이더 — 이야기에서 탐지된 요소가 쌓이는 그래프 */}
+        {growth.data && (
+          <section
+            aria-label="사고력 성장"
+            className="rounded-card border border-line bg-surface p-5"
+          >
+            <Stack gap="sm">
+              <Stack direction="row" align="center" justify="between" gap="md">
+                <h2 className="text-body font-semibold text-ink">생각이 자라고 있어요</h2>
+                <span className="text-caption text-ink-soft">
+                  완료한 이야기 {growth.data.completedSessions}개
+                </span>
+              </Stack>
+              <ElementRadar counts={growth.data.elementCounts} />
+            </Stack>
+          </section>
+        )}
 
         <Link
           href="/me/history"

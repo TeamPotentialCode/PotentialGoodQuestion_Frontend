@@ -254,6 +254,34 @@ describe('transition', () => {
     expect(s.phase).toEqual({ tag: 'awaitingChild' });
   });
 
+  it('15-1. 같은 미션 신호가 다음 턴에 또 와도 두 번 보여주지 않는다', () => {
+    // 백엔드는 조건이 유지되는 동안 매 턴 showMission=true 를 다시 보낸다
+    const oneTurnWithMission = (from: PlayState) =>
+      run(
+        [
+          { type: 'TAP_SPEAK' },
+          { type: 'TAP_SEND' },
+          { type: 'STT_SUCCEEDED', transcript: TRANSCRIPT },
+          { type: 'TAP_SEND' },
+          {
+            type: 'ANALYSIS_SUCCEEDED',
+            outcome: outcome({ showMission: true, missionType: 'MISSION_1' }),
+          },
+          { type: 'SPEECH_ENDED' },
+        ],
+        from,
+      );
+
+    let s = oneTurnWithMission(atAwaitingChild());
+    expect(s.phase).toEqual({ tag: 'mission', missionType: 'MISSION_1' });
+    s = transition(s, { type: 'MISSION_DISMISSED' });
+
+    s = oneTurnWithMission(s);
+    // 두 번째부터는 미션을 건너뛰고 바로 아이 차례다
+    expect(s.phase).toEqual({ tag: 'awaitingChild' });
+    expect(s.pendingMission).toBeNull();
+  });
+
   it('16. 장면이 끝나는 턴에 온 미션 신호는 버린다 — 장면이 끝나면 미션도 의미가 없다', () => {
     const s = run(
       [

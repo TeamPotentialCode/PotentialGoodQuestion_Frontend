@@ -293,21 +293,27 @@ export const handlers = [
     const denied = requireAuth(request);
     if (denied) return denied;
     const childId = Number(params.childId);
-    const sessions = allSessions()
-      .filter((s) => s.childId === childId)
-      .map(
-        (s): SessionSummary => ({
-          sessionId: s.sessionId,
-          storyTitle: MOCK_STORY.title,
-          status: s.status,
-          completedAt: s.status === 'COMPLETED' ? '2026-08-14T10:30:00' : null,
-          detectedElements: [],
-        }),
-      );
+    const mine = allSessions().filter((s) => s.childId === childId);
+    const sessions = mine.map(
+      (s): SessionSummary => ({
+        sessionId: s.sessionId,
+        storyTitle: MOCK_STORY.title,
+        status: s.status,
+        completedAt: s.status === 'COMPLETED' ? '2026-08-14T10:30:00' : null,
+        detectedElements: [...new Set(s.perSceneResults.flatMap((r) => r.detectedElements))],
+      }),
+    );
+    // 레이더용 누적 — 장면별 탐지 요소를 전부 센다 (실백엔드 GrowthService 미러링)
+    const elementCounts: Record<string, number> = {};
+    for (const s of mine) {
+      for (const r of s.perSceneResults) {
+        for (const e of r.detectedElements) elementCounts[e] = (elementCounts[e] ?? 0) + 1;
+      }
+    }
     const growth: GrowthInfo = {
       totalSessions: sessions.length,
       completedSessions: sessions.filter((s) => s.status === 'COMPLETED').length,
-      elementCounts: {},
+      elementCounts,
       recentSessions: sessions,
     };
     return ok(growth);
