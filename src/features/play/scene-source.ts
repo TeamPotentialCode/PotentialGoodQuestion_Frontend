@@ -110,7 +110,12 @@ export async function loadStoryScenes(storyId: number, anchorSceneId: number): P
  * `fromSceneId` 부터 이어지는 내레이션들과 그 뒤 첫 대화 장면을 묶어 재생 계획으로 만든다.
  * 대화 장면이 끝나면 다음 장면 id 로 다시 불러 그 사이 내레이션을 이어서 보여준다.
  */
-export async function loadScene(storyId: number, fromSceneId: number): Promise<LoadedScene> {
+export async function loadScene(
+  storyId: number,
+  fromSceneId: number,
+  /** 이 기기에서 이미 본 내레이션 장면 id — 재개 시 건너뛴다 */
+  watched: ReadonlySet<number> = new Set(),
+): Promise<LoadedScene> {
   const scenes = await loadStoryScenes(storyId, fromSceneId);
   const dialogues = scenes.filter(isDialogue);
   const narrations = scenes.filter((scene) => !isDialogue(scene));
@@ -137,6 +142,8 @@ export async function loadScene(storyId: number, fromSceneId: number): Promise<L
   if (from && !isDialogue(from)) {
     preceding = preceding.filter((scene) => scene.sceneOrder >= from.sceneOrder);
   }
+  // 이 기기에서 이미 본 장은 건너뛴다 — 커서가 대화를 가리키는 재개에서도 반복이 없다
+  preceding = preceding.filter((scene) => !watched.has(scene.sceneId));
 
   // 백엔드 imageUrl 은 실재하지 않는 더미라 프로젝트 삽화를 먼저 본다
   const pages: NarrationPage[] = preceding.map((scene) => ({

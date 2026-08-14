@@ -15,12 +15,20 @@ export function useIntroAudio(text: string) {
   const audio = useAudioOwnership();
   const [state, setState] = useState<'idle' | 'loading' | 'playing'>('idle');
   const cached = useRef<Blob | null>(null);
+  // 합성 중 화면을 떠나면 재생을 시작하지 않는다 (오디오는 모듈 전역이라 떠나도 소리가 난다)
+  const aliveRef = useRef(true);
 
   useEffect(() => {
     cached.current = null;
   }, [text]);
 
-  useEffect(() => () => audio.releaseAll(), [audio]);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      audio.releaseAll();
+    };
+  }, [audio]);
 
   const toggle = useCallback(() => {
     if (state === 'playing') {
@@ -34,6 +42,7 @@ export function useIntroAudio(text: string) {
     void (async () => {
       try {
         cached.current ??= await synthesize(text, NARRATOR_VOICE);
+        if (!aliveRef.current) return;
         setState('playing');
         await audio.play(cached.current);
       } catch {

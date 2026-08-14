@@ -241,9 +241,12 @@ test('녹음 중에는 마이크 입력 크기가 보인다', async ({ page }) =
   await expect(page.getByTestId('mic-level')).toBeVisible();
 });
 
-test('새로고침으로 바로 들어오면 상세로 돌려보내고, 이어서 하기로 돌아온다', async ({ page }) => {
+test('새로고침 후 이어서 하기는 본 내레이션을 건너뛰고 멈춘 곳으로 돌아온다', async ({ page }) => {
   await enterPlay(page);
   await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
+  // 내레이션을 다 보고 대화(자동 녹음)까지 진행한 뒤 멈춘다
+  await skipNarration(page);
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 20000 });
   const playUrl = page.url();
 
   // 새 문서 = 제스처 이력 0. 목 세션은 저장소에 남아 새로고침을 견딘다
@@ -254,9 +257,10 @@ test('새로고침으로 바로 들어오면 상세로 돌려보내고, 이어�
   const resume = page.getByRole('link', { name: '이어서 하기 →' });
   await expect(resume).toBeVisible();
 
-  // "이어서 하기" 탭이 제스처가 되어 이번엔 바로 내레이션이 시작된다
   await resume.click();
   await page.waitForURL(/\/play\/\d+$/);
   expect(page.url()).toBe(playUrl); // 같은 세션으로 돌아온다
-  await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
+  // 이미 본 도입 내레이션(시작 1/…)을 다시 보여주지 않고 대화로 직행한다
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 30000 });
+  await expect(page.getByText(/시작 \(1\//)).toBeHidden();
 });

@@ -14,6 +14,7 @@ import { hasUserGesture, useAudioOwnership } from '@/features/play/useAudioOwner
 import { characterVoice, NARRATOR_VOICE } from '@/features/play/voices';
 import { useMicLevel } from '@/features/play/use-mic-level';
 import { usePlayStore } from '@/features/play/usePlayStore';
+import { getWatchedNarrations, markNarrationWatched } from '@/features/play/watched-narrations';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getSession } from '@/features/story/api';
 
@@ -98,8 +99,18 @@ export function usePlaySession(sessionId: number) {
     enabled: Number.isFinite(sessionId),
   });
 
+  /*
+   * 화면 이탈 감지. 오디오는 모듈 전역이라, 이탈 후에도 이펙트의 오디오 체인
+   * (설명 낭독 → 대사 등)이 await 뒤에 이어지면 떠난 화면의 소리가 홈에서 난다.
+   * 설정/정리 짝으로 다루므로 Strict Mode 의 마운트→정리→재마운트에도 올바르다
+   */
+  const aliveRef = useRef(true);
   useEffect(() => {
-    return () => audio.releaseAll();
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      audio.releaseAll();
+    };
   }, [audio]);
 
   // 이펙트는 phase 만 의존성으로 두므로 이름은 ref 로 건네준다
@@ -150,7 +161,7 @@ export function usePlaySession(sessionId: number) {
             return;
           }
           try {
-            const loaded = await loadScene(story.storyId, from);
+            const loaded = await loadScene(story.storyId, from, getWatchedNarrations(sessionId));
             narrationAudioRef.current.clear();
             sceneAudioRef.current = null;
             setScene({
@@ -177,6 +188,7 @@ export function usePlaySession(sessionId: number) {
           const text = state.scene?.narrationSentences[phase.sentenceIndex] ?? '';
           try {
             const voice = await synthesize(text, NARRATOR_VOICE);
+            if (!aliveRef.current) return; // 합성 중 화면을 떠났다
             narrationAudioRef.current.set(phase.sentenceIndex, voice);
             await audio.play(voice);
           } catch {
@@ -198,11 +210,14 @@ export function usePlaySession(sessionId: number) {
                 sceneDescriptionRef.current,
                 NARRATOR_VOICE,
               );
+              if (!aliveRef.current) return;
               await audio.play(sceneAudioRef.current);
             } catch {
               // 설명 낭독이 실패해도 대사는 이어져야 한다
             }
           }
+          // 설명 낭독 중에 화면을 떠났으면 다음 오디오(TTS 요청 포함)를 만들지 않는다
+          if (!aliveRef.current) return;
           const text = pendingLineRef.current;
           setCharacterLine(text);
           setTurnLog((log) => [
@@ -211,6 +226,7 @@ export function usePlaySession(sessionId: number) {
           ]);
           try {
             const voice = await synthesize(text, characterVoice(characterNameRef.current));
+            if (!aliveRef.current) return;
             lineAudioRef.current = voice;
             await audio.play(voice);
           } catch {
@@ -359,6 +375,7 @@ export function usePlaySession(sessionId: number) {
    */
   const advanceNarration = useCallback(() => {
     if (narrationPage) {
+      markNarrationWatched(sessionId, narrationPage.sceneId);
       void completeNarrationScene(sessionId, narrationPage.sceneId).catch(() => {});
     }
     dispatch({ type: 'TAP_NEXT' });
