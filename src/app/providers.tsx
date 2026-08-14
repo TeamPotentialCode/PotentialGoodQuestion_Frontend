@@ -3,6 +3,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { getParentId, subscribeToSession } from '@/core/api/auth-token';
+// C-01 예외: 오디오 "프라이밍"만 여기서 한다. 재생·녹음은 여전히 useAudioOwnership 뿐이다
+import { primeAudio } from '@/core/audio/player';
 
 export function Providers({ children }: { children: ReactNode }) {
   // 클라이언트를 state 로 잡아 리렌더마다 새로 만들지 않는다
@@ -46,6 +48,17 @@ export function Providers({ children }: { children: ReactNode }) {
       }
     });
   }, [queryClient]);
+
+  /*
+   * WebKit(아이패드)은 제스처 없이 시작한 오디오 재생을 막는다.
+   * 아무 화면에서든 탭이 일어날 때마다 공유 AudioContext 를 깨워 두면,
+   * TTS 가 fetch 뒤 늦게 재생돼도 소리가 난다. iOS 가 백그라운드 복귀 후
+   * 컨텍스트를 다시 재우는 경우도 다음 탭이 되살린다 — 그래서 once 가 아니다
+   */
+  useEffect(() => {
+    document.addEventListener('pointerdown', primeAudio, { capture: true });
+    return () => document.removeEventListener('pointerdown', primeAudio, { capture: true });
+  }, []);
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

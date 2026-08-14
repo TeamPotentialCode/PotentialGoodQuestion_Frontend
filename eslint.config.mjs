@@ -76,6 +76,7 @@ const eslintConfig = defineConfig([
       "src/core/audio/**",
       "src/features/play/useAudioOwnership.ts",
       "src/features/play/usePlayStore.ts",
+      "src/app/providers.tsx",
     ],
     rules: {
       "no-restricted-imports": [
@@ -92,9 +93,10 @@ const eslintConfig = defineConfig([
     },
   },
 
-  // 오디오는 허용, 스토어·상대경로는 그대로 금지
+  // 오디오는 허용, 스토어·상대경로는 그대로 금지.
+  // providers 는 WebKit 자동재생 프라이밍(primeAudio) 때문에만 예외다 — 재생·녹음 제어는 여전히 금지 대상
   {
-    files: ["src/features/play/useAudioOwnership.ts"],
+    files: ["src/features/play/useAudioOwnership.ts", "src/app/providers.tsx"],
     rules: {
       "no-restricted-imports": [
         "error",
