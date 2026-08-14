@@ -10,6 +10,8 @@ import type {
   AuthTokens,
   Child,
   ChildUpsertRequest,
+  ConsentInfo,
+  ConsentRequest,
   HomeData,
   LoginRequest,
   SessionInfo,
@@ -124,6 +126,9 @@ function noChildrenFlag(): boolean {
  * "앞 계정 데이터가 새는지" 를 테스트로 확인할 수 없다.
  */
 const childrenByParent = new Map<number, Child[]>();
+// 아이당 유효한 동의는 하나. 철회하면 지운다(실백엔드는 withdrawnAt 을 채운다)
+const consentsByChild = new Map<number, ConsentInfo>();
+let nextConsentId = 1;
 let nextChildId = 2;
 
 /** 목 액세스 토큰은 mock-access-{parentId} 형태다 */
@@ -151,6 +156,8 @@ export function resetApiState(): void {
   if (typeof localStorage !== 'undefined') localStorage.removeItem(NO_CHILDREN_KEY);
   childrenByParent.clear();
   nextChildId = 2;
+  consentsByChild.clear();
+  nextConsentId = 1;
 }
 
 /** 아이 미등록 상태를 만든다(등록 화면 확인용). 새로고침해도 유지된다. */
@@ -158,6 +165,7 @@ export function clearChildren(): void {
   if (typeof localStorage !== 'undefined') localStorage.setItem(NO_CHILDREN_KEY, '1');
   childrenByParent.clear();
   nextChildId = 2;
+  consentsByChild.clear();
 }
 
 // 실백엔드 SessionInfo 와 같은 형태로 변환한다.
@@ -251,6 +259,47 @@ export const handlers = [
     child.birthYear = body.birthYear;
     child.age = CURRENT_YEAR - body.birthYear;
     return ok(child);
+  }),
+
+  // ---------- 아동 개인정보 처리 동의 ----------
+  // 실백엔드는 유효한 동의가 없으면 404 를 준다 — 부르는 쪽이 "동의 없음"으로 읽는다
+  http.post(api('/children/:childId/consent'), async ({ request, params }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const childId = Number(params.childId);
+    const child = childrenOf(parentIdOf(request)).find((c) => c.childId === childId);
+    if (!child) return fail(404, 'CHILD_001', '아이를 찾을 수 없습니다.');
+    const body = (await request.json()) as ConsentRequest;
+    const info: ConsentInfo = {
+      consentId: nextConsentId++,
+      childId,
+      consentVersion: body.consentVersion,
+      verificationMethod: body.verificationMethod,
+      consentedAt: '2026-08-14T09:00:00',
+      active: true,
+    };
+    consentsByChild.set(childId, info);
+    return ok(info, 201);
+  }),
+
+  http.get(api('/children/:childId/consent'), async ({ request, params }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const info = consentsByChild.get(Number(params.childId));
+    if (!info) return fail(404, 'CHILD_001', '유효한 동의가 없습니다.');
+    return ok(info);
+  }),
+
+  http.delete(api('/children/:childId/consent'), async ({ request, params }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    if (!consentsByChild.delete(Number(params.childId))) {
+      return fail(404, 'CHILD_001', '유효한 동의가 없습니다.');
+    }
+    return ok(null);
   }),
 
   // ---------- 홈 ----------

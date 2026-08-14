@@ -63,11 +63,32 @@ export interface Child {
 
 /**
  * 등록·수정 모두 **birthYear** 로 보낸다 (2000~2030).
- * 화면은 "나이"를 받고 보낼 때 환산한다 — 백엔드도 age = 올해 - birthYear 로 계산하므로 정확히 왕복한다
+ * 화면은 시안대로 생년월일을 받고 연도만 뽑아 보낸다 —
+ * 백엔드는 age = 올해 - birthYear 로 계산하므로 나이는 정확히 왕복한다.
+ * 월·일을 담을 곳이 백엔드에 없어 그 부분은 기기에만 남는다(features/child-profile/birth-date.ts)
  */
 export interface ChildUpsertRequest {
   name: string;
   birthYear: number;
+}
+
+/**
+ * 아동 개인정보 처리 동의 (`/children/{childId}/consent`).
+ * MVP 규칙상 동의가 없거나 철회된 아이는 새 세션을 시작할 수 없다.
+ * 유효한 동의가 없으면 GET 은 404 를 돌려준다
+ */
+export interface ConsentRequest {
+  consentVersion: string;
+  verificationMethod: string;
+}
+
+export interface ConsentInfo {
+  consentId: number;
+  childId: number;
+  consentVersion: string;
+  verificationMethod: string;
+  consentedAt: string;
+  active: boolean;
 }
 
 // ---------- 이야기 (실측 확정) ----------

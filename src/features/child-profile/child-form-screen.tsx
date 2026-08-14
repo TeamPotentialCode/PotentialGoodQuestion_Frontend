@@ -32,7 +32,17 @@ export function ChildFormScreen({ child }: { child?: Child }) {
 
         <div className="mx-auto w-full max-w-lg rounded-card border border-line bg-surface p-8">
           <Stack gap="md">
-            <ChildForm child={child} onDone={() => router.push('/children')} />
+            {/*
+             * 신규 등록은 곧바로 보호자 동의로 넘어간다 —
+             * 동의가 없으면 아이의 활동을 시작할 수 없다는 MVP 규칙 때문이다.
+             * 수정은 이미 동의를 받은 아이라 목록으로 돌아간다
+             */}
+            <ChildForm
+              child={child}
+              onDone={(saved) =>
+                router.push(child ? '/children' : `/children/${saved.childId}/consent`)
+              }
+            />
             <Link
               href="/children"
               className="text-center text-caption font-medium text-ink underline"

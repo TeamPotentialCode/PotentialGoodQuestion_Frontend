@@ -45,11 +45,19 @@ test('아이가 없으면 등록 폼을 보여주고, 등록하면 목록과 홈
 
   await expect(page.getByRole('heading', { name: '아이 정보를 알려 주세요' })).toBeVisible();
   await page.getByLabel('아이 이름').fill('하늘');
-  await page.getByRole('button', { name: '7세' }).click();
-  await page.getByRole('button', { name: '등록하기' }).click();
+  await page.getByLabel('생년월일').fill('2019-03-14');
+  await page.getByRole('button', { name: '계속하기' }).click();
 
-  // 등록이 끝나면 아이 선택 화면으로 돌아오고 목록에 보인다
-  await page.waitForURL('**/children');
+  // 등록 다음은 보호자 동의다 — 동의 없이는 활동을 시작할 수 없다(MVP 규칙)
+  await page.waitForURL(/\/children\/\d+\/consent/);
+  await expect(page.getByText('보호자 동의가 필요해요')).toBeVisible();
+  await expect(page.getByText('하늘 · 2019. 03. 14. (7세)')).toBeVisible();
+  await expect(page.getByRole('button', { name: '동의하고 계속하기' })).toBeDisabled();
+  await page.getByLabel('아동 개인정보 수집·이용 동의 (필수)').check();
+  await page.getByRole('button', { name: '동의하고 계속하기' }).click();
+
+  // 동의가 끝나면 아이 선택 화면으로 돌아오고 목록에 보인다
+  await page.waitForURL(/\/children$/);
   await expect(page.getByRole('listitem').filter({ hasText: '하늘' })).toBeVisible();
 
   await page.getByRole('button', { name: '이 아이로 시작하기' }).click();
@@ -73,16 +81,16 @@ test('이름 없이 등록하면 요청을 보내기 전에 막는다', async ({
     return route.continue();
   });
 
-  // 나이만 고르고 이름은 비운 채 제출한다
-  await page.getByRole('button', { name: '7세' }).click();
-  await page.getByRole('button', { name: '등록하기' }).click();
+  // 생년월일만 넣고 이름은 비운 채 제출한다
+  await page.getByLabel('생년월일').fill('2019-03-14');
+  await page.getByRole('button', { name: '계속하기' }).click();
 
   await expect(page.getByText('아이 이름을 입력해 주세요.')).toBeVisible();
   expect(posted).toBe(false);
   await expect(page).toHaveURL(/\/children\/new/);
 });
 
-test('나이를 안 고르면 요청을 보내지 않는다', async ({ page }) => {
+test('생년월일을 안 넣으면 요청을 보내지 않는다', async ({ page }) => {
   await startFresh(page, { withoutChildren: true });
   await page.getByRole('link', { name: '아이 추가' }).click();
   await page.waitForURL('**/children/new');
@@ -94,9 +102,9 @@ test('나이를 안 고르면 요청을 보내지 않는다', async ({ page }) =
   });
 
   await page.getByLabel('아이 이름').fill('하늘');
-  await page.getByRole('button', { name: '등록하기' }).click();
+  await page.getByRole('button', { name: '계속하기' }).click();
 
-  await expect(page.getByText('나이를 숫자로 입력해 주세요.')).toBeVisible();
+  await expect(page.getByText('생년월일을 입력해 주세요.')).toBeVisible();
   expect(posted).toBe(false);
 });
 
@@ -110,8 +118,8 @@ test('정원이 차면 서버 응답을 그대로 보여준다', async ({ page }
   await page.getByRole('link', { name: '아이 추가' }).click();
   await page.waitForURL('**/children/new');
   await page.getByLabel('아이 이름').fill('둘째');
-  await page.getByRole('button', { name: '6세' }).click();
-  await page.getByRole('button', { name: '등록하기' }).click();
+  await page.getByLabel('생년월일').fill('2020-06-01');
+  await page.getByRole('button', { name: '계속하기' }).click();
 
   await expect(page.getByText('등록 가능한 아이 수를 초과했습니다.')).toBeVisible();
 });
@@ -128,7 +136,7 @@ test('등록된 아이를 수정하면 선택 화면에 반영된다', async ({ 
   // 기존 값이 채워진 채로 열린다
   await expect(page.getByLabel('아이 이름')).not.toHaveValue('');
   await page.getByLabel('아이 이름').fill('바다');
-  await page.getByRole('button', { name: '9세' }).click();
+  await page.getByLabel('생년월일').fill('2017-05-02');
   await page.getByRole('button', { name: '수정하기' }).click();
 
   await page.waitForURL('**/children');
