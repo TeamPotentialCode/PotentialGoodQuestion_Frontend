@@ -6,20 +6,21 @@ import { sceneImage } from '@/features/story/images';
 /**
  * 대화 화면이 장면을 얻는 유일한 통로.
  *
- * 백엔드에 **장면 목록 API가 없어서** sceneId 를 1부터 훑어 목록을 만든다.
- * 시드가 id 와 sceneOrder 가 같은 순서라 동작하지만 **가정에 기댄 임시 구현**이다.
- * `GET /api/stories/{storyId}/scenes` 가 생기면 loadStoryScenes 만 요청 한 번으로 바꾸면 된다.
+ * `GET /stories/{storyId}/scenes` 목록 한 번으로 받는다(백엔드 38cbb55).
+ * 목록 API 가 없는 구버전 배포를 만나면 앵커(세션이 아는 장면 id)에서
+ * 앞뒤 연속 id 를 훑는 예전 방식으로 폴백한다.
  *
- * 한 이야기의 장면은 내레이션과 대화가 번갈아 나온다(시드 기준 1·2 내레이션 → 3 대화 → 4 내레이션 …).
  * 내레이션 장면은 characterName·characterOpening 이 null 이다.
  */
-const MAX_SCENE_ID = 30;
+const MAX_SCENES = 30;
 const STOP_AFTER_CONSECUTIVE_MISSES = 2;
 
 const cache = new Map<number, SceneInfo[]>();
 
 /** 대화 장면 앞에 붙는 내레이션 한 장. 화면 하나에 해당한다 */
 export interface NarrationPage {
+  /** 완료 알림(narration-complete)에 쓰는 장면 id */
+  sceneId: number;
   text: string;
   imageUrl: string | null;
   /** 이야기 전체 내레이션 중 몇 번째인지 (1부터) — 헤더의 "시작 (n/5)" */
@@ -45,18 +46,57 @@ export interface LoadedScene {
 
 const isDialogue = (scene: SceneInfo) => scene.characterName !== null;
 
-/** 이야기의 장면 전체를 sceneOrder 순으로. 스토리별로 한 번만 훑는다 */
-export async function loadStoryScenes(storyId: number): Promise<SceneInfo[]> {
+async function fetchScene(storyId: number, sceneId: number): Promise<SceneInfo | null> {
+  try {
+    return await apiRequest<SceneInfo>(`/stories/${storyId}/scenes/${sceneId}`);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 이야기의 장면 전체를 sceneOrder 순으로. 스토리별로 한 번만 받는다.
+ * anchorSceneId 는 목록 API 가 없는 구버전 폴백에서만 쓴다
+ */
+export async function loadStoryScenes(storyId: number, anchorSceneId: number): Promise<SceneInfo[]> {
   const cached = cache.get(storyId);
   if (cached) return cached;
 
+  // 정상 경로: 목록 한 번
+  try {
+    const listed = await apiRequest<SceneInfo[]>(`/stories/${storyId}/scenes`);
+    if (listed.length > 0) {
+      listed.sort((a, b) => a.sceneOrder - b.sceneOrder);
+      cache.set(storyId, listed);
+      return listed;
+    }
+  } catch {
+    // 목록 API 가 없는 배포 — 아래 앵커 탐색으로 폴백
+  }
+
   const scenes: SceneInfo[] = [];
+  const anchor = await fetchScene(storyId, anchorSceneId);
+  if (anchor) scenes.push(anchor);
+
+  // 앵커 뒤쪽(id 증가)으로 — 연속 실패 2번이면 블록의 끝이다
   let misses = 0;
-  for (let sceneId = 1; sceneId <= MAX_SCENE_ID && misses < STOP_AFTER_CONSECUTIVE_MISSES; sceneId += 1) {
-    try {
-      scenes.push(await apiRequest<SceneInfo>(`/stories/${storyId}/scenes/${sceneId}`));
+  for (let id = anchorSceneId + 1; id <= anchorSceneId + MAX_SCENES && misses < STOP_AFTER_CONSECUTIVE_MISSES; id += 1) {
+    const scene = await fetchScene(storyId, id);
+    if (scene) {
+      scenes.push(scene);
       misses = 0;
-    } catch {
+    } else {
+      misses += 1;
+    }
+  }
+  // 앵커 앞쪽(id 감소)으로 — 이어하기로 중간 장면에서 시작해도 도입까지 거슬러 모은다
+  misses = 0;
+  for (let id = anchorSceneId - 1; id >= 1 && id >= anchorSceneId - MAX_SCENES && misses < STOP_AFTER_CONSECUTIVE_MISSES; id -= 1) {
+    const scene = await fetchScene(storyId, id);
+    if (scene) {
+      scenes.push(scene);
+      misses = 0;
+    } else {
       misses += 1;
     }
   }
@@ -71,7 +111,7 @@ export async function loadStoryScenes(storyId: number): Promise<SceneInfo[]> {
  * 대화 장면이 끝나면 다음 장면 id 로 다시 불러 그 사이 내레이션을 이어서 보여준다.
  */
 export async function loadScene(storyId: number, fromSceneId: number): Promise<LoadedScene> {
-  const scenes = await loadStoryScenes(storyId);
+  const scenes = await loadStoryScenes(storyId, fromSceneId);
   const dialogues = scenes.filter(isDialogue);
   const narrations = scenes.filter((scene) => !isDialogue(scene));
 
@@ -84,16 +124,23 @@ export async function loadScene(storyId: number, fromSceneId: number): Promise<L
   }
 
   // 이 대화 장면 **바로 앞에 붙어 있는** 내레이션들이 지금 들려줄 도입부다.
-  // 세션의 currentSceneId 는 대화 장면(예: 3)을 가리키므로 fromOrder 로 자르면
-  // 그 앞 내레이션(1·2)이 통째로 빠진다 — 그래서 뒤에서부터 거슬러 모은다
   const index = scenes.indexOf(current);
-  const preceding: SceneInfo[] = [];
+  let preceding: SceneInfo[] = [];
   for (let i = index - 1; i >= 0 && !isDialogue(scenes[i]); i -= 1) {
     preceding.unshift(scenes[i]);
+  }
+  /*
+   * 재개 지점이 내레이션이면(narration-complete 로 서버가 위치를 기억한다)
+   * 이미 본 앞 장들은 건너뛴다. 재개 지점이 대화면 — 직전 대화가 끝나
+   * 다음 대화로 넘어온 경우라 그 사이 내레이션은 아직 안 본 것 — 전부 보여준다
+   */
+  if (from && !isDialogue(from)) {
+    preceding = preceding.filter((scene) => scene.sceneOrder >= from.sceneOrder);
   }
 
   // 백엔드 imageUrl 은 실재하지 않는 더미라 프로젝트 삽화를 먼저 본다
   const pages: NarrationPage[] = preceding.map((scene) => ({
+    sceneId: scene.sceneId,
     text: scene.sceneDescription,
     imageUrl: sceneImage(storyId, scene.sceneOrder) ?? scene.imageUrl,
     narrationIndex: narrations.indexOf(scene) + 1,

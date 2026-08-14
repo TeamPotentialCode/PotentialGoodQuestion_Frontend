@@ -1,5 +1,11 @@
 import { apiRequest, apiRequestBlob } from '@/core/api/client';
-import type { SttData, TtsVoice, UtteranceData, UtteranceRequest } from '@/core/api/types';
+import type {
+  NarrationResult,
+  SttData,
+  TtsVoice,
+  UtteranceData,
+  UtteranceRequest,
+} from '@/core/api/types';
 
 export function transcribe(audio: Blob): Promise<SttData> {
   const form = new FormData();
@@ -14,6 +20,17 @@ export function transcribe(audio: Blob): Promise<SttData> {
  */
 export function synthesize(text: string, voice?: TtsVoice): Promise<Blob> {
   return apiRequestBlob('/speech/tts', { body: voice ? { text, voice } : { text } });
+}
+
+/** 내레이션 한 장을 다 봤다고 서버에 알린다 — 이어하기 위치가 정확해진다 */
+export function completeNarrationScene(
+  sessionId: number,
+  sceneId: number,
+): Promise<NarrationResult> {
+  return apiRequest<NarrationResult>(`/sessions/${sessionId}/scenes/${sceneId}/narration-complete`, {
+    method: 'POST',
+    body: {},
+  });
 }
 
 export function submitUtterance(

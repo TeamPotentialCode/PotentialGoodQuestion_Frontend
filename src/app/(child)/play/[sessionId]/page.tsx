@@ -9,7 +9,7 @@ import { PlayNarration } from '@/features/play/play-narration';
 import { PlayStage } from '@/features/play/play-stage';
 import { hasUserGesture } from '@/features/play/useAudioOwnership';
 import { usePlaySession } from '@/features/play/usePlaySession';
-import { sceneClosingImage } from '@/features/story/images';
+import { dialogueClosingImage } from '@/features/story/images';
 import { Screen, Stack, TouchTarget } from '@/shared/ui';
 
 export default function PlayPage() {
@@ -93,7 +93,7 @@ export default function PlayPage() {
             page={narrationPage}
             total={scene?.narrationTotal ?? 0}
             onReplay={play.replayNarration}
-            onNext={() => dispatch({ type: 'TAP_NEXT' })}
+            onNext={play.advanceNarration}
           />
         ) : (
           <PlayStage
@@ -104,7 +104,7 @@ export default function PlayPage() {
             imageUrl={
               ((state.phase.tag === 'speaking' && state.phase.kind === 'closing') ||
               state.phase.tag === 'sceneComplete'
-                ? sceneClosingImage(session.data.storyId, state.scene?.sceneId ?? -1)
+                ? dialogueClosingImage(scene?.dialogueIndex ?? 0)
                 : null) ?? scene?.imageUrl ?? null
             }
             characterLine={characterLine}

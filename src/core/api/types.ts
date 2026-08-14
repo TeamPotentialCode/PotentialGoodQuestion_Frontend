@@ -162,6 +162,20 @@ export interface SceneInfo {
   characterOpening: string | null;
 }
 
+/**
+ * POST /sessions/{id}/scenes/{sceneId}/narration-complete (38cbb55).
+ * 내레이션(전개·도입) 재생이 끝났을 때 호출 — 서버가 세션 위치를 다음 장면으로 옮긴다.
+ * 대화 장면에 부르면 STORY_003 오류
+ */
+export interface NarrationResult {
+  completedSceneId: number;
+  completedSceneOrder: number;
+  nextSceneId: number | null;
+  nextSceneOrder: number | null;
+  /** null 이면 다음도 내레이션, 있으면 대화 장면 */
+  nextCharacterName: string | null;
+}
+
 // ---------- 아래는 예전 제안안 (아직 목 내부 전용) ----------
 
 export interface NarrationItem {

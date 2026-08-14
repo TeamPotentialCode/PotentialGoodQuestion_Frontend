@@ -195,7 +195,7 @@ function toSessionInfo(session: MockSession): SessionInfo {
     childId: session.childId,
     childName: child?.name ?? MOCK_CHILD_NAME,
     status: session.status,
-    currentSceneId: buildScenePayload(session).sceneId,
+    currentSceneId: session.narrationSceneId ?? buildScenePayload(session).sceneId,
     currentChildTurnCount: session.turnCount,
     startedAt: '2026-08-10T10:00:00',
     completedAt: session.status === 'COMPLETED' ? '2026-08-10T10:30:00' : null,
@@ -433,6 +433,36 @@ export const handlers = [
     const { sessionId } = createSession(Number(params.storyId), body.childId);
     const session = getSession(sessionId);
     return ok(toSessionInfo(session!), 201);
+  }),
+
+  // ---------- 장면 목록 (백엔드 38cbb55 미러링) ----------
+  http.get(api('/stories/:storyId/scenes'), async ({ request }) => {
+    await simulateLatency();
+    return requireAuth(request) ?? ok(ALL_SCENES);
+  }),
+
+  // 내레이션(전개·도입) 완료 — 세션 위치를 다음 장면으로 옮긴다
+  http.post(api('/sessions/:sessionId/scenes/:sceneId/narration-complete'), async ({ request, params }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const session = getSession(Number(params.sessionId));
+    if (!session) return fail(404, 'SESSION_001', '세션을 찾을 수 없습니다.');
+    const scene = ALL_SCENES.find((s) => s.sceneId === Number(params.sceneId));
+    if (!scene) return fail(404, 'STORY_002', '장면을 찾을 수 없습니다.');
+    if (scene.characterName !== null) {
+      return fail(400, 'STORY_003', '내레이션 장면이 아닙니다.');
+    }
+    const next = ALL_SCENES.find((s) => s.sceneOrder === scene.sceneOrder + 1) ?? null;
+    // 다음이 내레이션이면 커서를 옮기고, 대화면 대화 진행(payload)으로 넘긴다
+    session.narrationSceneId = next && next.characterName === null ? next.sceneId : null;
+    return ok({
+      completedSceneId: scene.sceneId,
+      completedSceneOrder: scene.sceneOrder,
+      nextSceneId: next?.sceneId ?? null,
+      nextSceneOrder: next?.sceneOrder ?? null,
+      nextCharacterName: next?.characterName ?? null,
+    });
   }),
 
   // ---------- 세션 ----------

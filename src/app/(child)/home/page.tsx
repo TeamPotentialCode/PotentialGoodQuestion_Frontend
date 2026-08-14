@@ -33,8 +33,9 @@ export default function HomePage() {
    */
   const scenes = useQuery({
     queryKey: ['story-scenes', cont?.storyId],
-    queryFn: () => loadStoryScenes(cont!.storyId),
-    enabled: cont !== null,
+    // 장면 id 는 재시드로 밀릴 수 있어 세션이 아는 실제 장면 id 를 앵커로 쓴다
+    queryFn: () => loadStoryScenes(cont!.storyId, cont!.currentSceneId!),
+    enabled: cont !== null && cont?.currentSceneId != null,
     staleTime: Infinity,
   });
 

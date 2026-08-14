@@ -46,6 +46,8 @@ export interface MockSession {
   status: 'IN_PROGRESS' | 'COMPLETED';
   messages: SessionMessage[];
   perSceneResults: SceneResult[];
+  /** 지금 보고 있는 내레이션 장면 id. null 이면 대화 진행 중 (실백엔드 38cbb55 미러링) */
+  narrationSceneId?: number | null;
 }
 
 let nextSessionId = 1;
@@ -122,6 +124,8 @@ export function createSession(
     childId,
     sceneIndex: 0,
     turnCount: 0,
+    // 실백엔드처럼 세션은 첫 장면(도입 내레이션)에서 시작한다
+    narrationSceneId: 1,
     accumulated: new Set(),
     lowInfoStreak: 0,
     noNewElementStreak: 0,

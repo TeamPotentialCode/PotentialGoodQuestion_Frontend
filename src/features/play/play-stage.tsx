@@ -94,7 +94,8 @@ export function PlayStage({
             <div className="rounded-card bg-surface-raised px-5 py-4">
               <p className="flex items-start gap-3 text-body text-ink">
                 <Icon name="wave" className="mt-1" />
-                <span>{sceneDescription}</span>
+                {/* 원문 설명은 여러 줄로 온다 — 줄바꿈을 살린다 */}
+                <span className="whitespace-pre-line">{sceneDescription}</span>
               </p>
               <ReplayButton onClick={onReplayScene} label="장면 설명 다시 듣기" />
             </div>

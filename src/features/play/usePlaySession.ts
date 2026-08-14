@@ -3,7 +3,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Phase } from '@/core/play-session/types';
-import { submitUtterance, synthesize, transcribe } from '@/features/play/api';
+import {
+  completeNarrationScene,
+  submitUtterance,
+  synthesize,
+  transcribe,
+} from '@/features/play/api';
 import { loadScene, type NarrationPage } from '@/features/play/scene-source';
 import { hasUserGesture, useAudioOwnership } from '@/features/play/useAudioOwnership';
 import { characterVoice, NARRATOR_VOICE } from '@/features/play/voices';
@@ -74,6 +79,8 @@ export function usePlaySession(sessionId: number) {
 
   // "최근 이야기" 에 적을 캐릭터 이름. 장면을 불러올 때 함께 채운다
   const characterNameRef = useRef('');
+  // opening 직전에 낭독할 장면 설명 — 이펙트가 phase 만 의존성으로 두므로 ref 로 건넨다
+  const sceneDescriptionRef = useRef('');
 
   const pendingLineRef = useRef('');
   // 다시 듣기용 — 이미 받은 음성을 재사용해 TTS 를 다시 부르지 않는다
@@ -156,6 +163,7 @@ export function usePlaySession(sessionId: number) {
               dialogueTotal: loaded.dialogueTotal,
             });
             characterNameRef.current = loaded.characterName;
+            sceneDescriptionRef.current = loaded.sceneDescription;
             pendingLineRef.current = withChildName(loaded.characterOpening, childNameRef.current);
             setCharacterLine('');
             dispatch({ type: 'SCENE_LOADED', scene: loaded.plan });
@@ -179,6 +187,22 @@ export function usePlaySession(sessionId: number) {
         }
 
         case 'speaking': {
+          /*
+           * 장면에 처음 들어올 때(opening)는 장면 설명을 내레이터 목소리로 먼저 읽어준다
+           * (팀 결정 2026-08-14: 설명도 다 읽는다 — 원문 수준의 긴 문단이 들어올 예정).
+           * 받은 음성은 sceneAudioRef 에 캐시해 "다시 듣기"가 재호출 없이 재사용한다
+           */
+          if (phase.kind === 'opening' && sceneDescriptionRef.current) {
+            try {
+              sceneAudioRef.current ??= await synthesize(
+                sceneDescriptionRef.current,
+                NARRATOR_VOICE,
+              );
+              await audio.play(sceneAudioRef.current);
+            } catch {
+              // 설명 낭독이 실패해도 대사는 이어져야 한다
+            }
+          }
           const text = pendingLineRef.current;
           setCharacterLine(text);
           setTurnLog((log) => [
@@ -329,6 +353,17 @@ export function usePlaySession(sessionId: number) {
   const narrationPage =
     state.phase.tag === 'narrating' ? (scene?.narration[state.phase.sentenceIndex] ?? null) : null;
 
+  /*
+   * "다음" — 서버에 이 내레이션을 다 봤다고 알리고(이어하기 위치 저장) 다음 장으로.
+   * 알림은 흐름을 막지 않는다: 실패해도 이야기는 계속돼야 하고, 위치 저장은 보너스다
+   */
+  const advanceNarration = useCallback(() => {
+    if (narrationPage) {
+      void completeNarrationScene(sessionId, narrationPage.sceneId).catch(() => {});
+    }
+    dispatch({ type: 'TAP_NEXT' });
+  }, [narrationPage, sessionId, dispatch]);
+
   return {
     state,
     dispatch,
@@ -339,6 +374,7 @@ export function usePlaySession(sessionId: number) {
     micLevel,
     session,
     replayNarration,
+    advanceNarration,
     replaySceneDescription,
     replayCharacterLine,
   };
