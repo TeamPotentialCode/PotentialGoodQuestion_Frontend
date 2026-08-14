@@ -16,8 +16,8 @@ interface TabItem {
 /**
  * 화면 하단 탭.
  *
- * 시안대로 4개를 두되 화면이 없는 단어장·마이페이지는 비활성이다.
- * 화면이 생기면 disabled 만 떼면 된다.
+ * 시안대로 4개. 단어장·마이페이지는 디자이너가 "작동 안 해도 된다"고 한 화면이지만
+ * 배포본에 API 가 있어 붙였다 — 없으면 빈 상태로 떨어진다.
  *
  * sticky 로 만들었다가 되돌렸다. Screen 은 min-h-dvh 라 내용이 넘치면 자기가 늘어나고
  * 문서가 스크롤된다 — 스크롤 컨테이너가 아니라서 sticky 가 붙을 곳이 없고 탭바가 화면 밖으로 잘렸다.
@@ -28,10 +28,8 @@ const BAR_HEIGHT = 'h-[4.5rem]';
 const TABS: TabItem[] = [
   { href: '/home', label: '홈', icon: 'home' },
   { href: '/stories', label: '이야기', icon: 'book' },
-  // 시안에는 있으나 화면도 API 도 없다 — 보이되 비활성.
-  // 되는 것처럼 보이다가 빈 화면으로 떨어지는 것보다 낫다
-  { href: '/words', label: '단어장', icon: 'bookmark', disabled: true },
-  { href: '/me', label: '마이페이지', icon: 'person', disabled: true },
+  { href: '/words', label: '단어장', icon: 'bookmark' },
+  { href: '/me', label: '마이페이지', icon: 'person' },
 ];
 
 export function TabBar({ className }: { className?: string }) {

@@ -139,6 +139,11 @@ export function getSession(sessionId: number): MockSession | undefined {
   return sessions.get(sessionId);
 }
 
+/** 만든 순서대로 전부. "내 활동 기록"이 완료분을 추리는 데 쓴다 */
+export function allSessions(): MockSession[] {
+  return [...sessions.values()];
+}
+
 /**
  * 진행 중인 최신 세션. childId 를 주면 그 아이 것만 본다 —
  * 안 그러면 계정을 바꿔도 앞 계정의 "이어하기" 가 홈에 그대로 뜬다

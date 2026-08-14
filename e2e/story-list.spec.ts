@@ -32,20 +32,31 @@ test('홈 하단 탭에서 이야기로 이동한다', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '이야기' })).toBeVisible();
 });
 
-test('탭은 4개이고 화면 없는 둘은 비활성이며 현재 위치를 표시한다', async ({ page }) => {
+test('탭 4개가 모두 열려 있고 현재 위치를 표시한다', async ({ page }) => {
   await login(page);
   await page.goto('/stories');
   await expect(page.getByTestId('story-list')).toBeVisible();
 
-  // 시안대로 4칸이지만 화면이 없는 둘은 링크가 아니라 비활성 버튼이다
   await expect(tabs(page).getByRole('listitem')).toHaveCount(4);
-  await expect(tabs(page).getByRole('link')).toHaveCount(2);
-  await expect(tabs(page).getByRole('button', { name: '단어장' })).toBeDisabled();
-  await expect(tabs(page).getByRole('button', { name: '마이페이지' })).toBeDisabled();
+  await expect(tabs(page).getByRole('link')).toHaveCount(4);
   await expect(tabs(page).getByRole('link', { name: '이야기' })).toHaveAttribute(
     'aria-current',
     'page',
   );
+
+  // 단어장은 아직 모은 단어가 없다 — 시안의 빈 상태
+  await tabs(page).getByRole('link', { name: '단어장' }).click();
+  await page.waitForURL('**/words');
+  await expect(page.getByText('아직 모은 단어가 없어요!')).toBeVisible();
+  await expect(page.getByRole('link', { name: '이야기 보러 가기' })).toBeVisible();
+
+  // 마이페이지 → 내 활동 기록
+  await tabs(page).getByRole('link', { name: '마이페이지' }).click();
+  await page.waitForURL('**/me');
+  await expect(page.getByRole('link', { name: /내 활동 기록/ })).toBeVisible();
+  await page.getByRole('link', { name: /내 활동 기록/ }).click();
+  await page.waitForURL('**/me/history');
+  await expect(page.getByText('내가 끝낸 이야기를 다시 볼 수 있어요.')).toBeVisible();
 });
 
 test('카드에 제목·시간·난이도·주제가 보이고 빈 자리는 "준비 중"이 메운다', async ({ page }) => {

@@ -12,11 +12,14 @@ import type {
   ChildUpsertRequest,
   ConsentInfo,
   ConsentRequest,
+  GrowthInfo,
   HomeData,
+  SessionSummary,
   LoginRequest,
   SessionInfo,
   SignupRequest,
   UtteranceRequest,
+  WordList,
 } from '@/core/api/types';
 import {
   ACTIVITY_CARDS,
@@ -31,6 +34,7 @@ import { silentMp3 } from '@/mocks/fixtures/silent-audio';
 import { consumeScenario, getScenario } from '@/mocks/scenario';
 import {
   activeSession,
+  allSessions,
   buildReport,
   buildScenePayload,
   createSession,
@@ -259,6 +263,42 @@ export const handlers = [
     child.birthYear = body.birthYear;
     child.age = CURRENT_YEAR - body.birthYear;
     return ok(child);
+  }),
+
+  // ---------- 단어장 · 성장 기록 ----------
+  // 실백엔드에도 있는 API 다. 시드에 단어는 없고(시안의 빈 상태),
+  // 완료한 세션만 "내 활동 기록"으로 넘어간다
+  http.get(api('/children/:childId/words'), async ({ request }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const empty: WordList = { totalCount: 0, favoriteCount: 0, words: [] };
+    return ok(empty);
+  }),
+
+  http.get(api('/children/:childId/growth'), async ({ request, params }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const childId = Number(params.childId);
+    const sessions = allSessions()
+      .filter((s) => s.childId === childId)
+      .map(
+        (s): SessionSummary => ({
+          sessionId: s.sessionId,
+          storyTitle: MOCK_STORY.title,
+          status: s.status,
+          completedAt: s.status === 'COMPLETED' ? '2026-08-14T10:30:00' : null,
+          detectedElements: [],
+        }),
+      );
+    const growth: GrowthInfo = {
+      totalSessions: sessions.length,
+      completedSessions: sessions.filter((s) => s.status === 'COMPLETED').length,
+      elementCounts: {},
+      recentSessions: sessions,
+    };
+    return ok(growth);
   }),
 
   // ---------- 아동 개인정보 처리 동의 ----------

@@ -8,7 +8,7 @@ import { extendTailwindMerge } from 'tailwind-merge';
  * 토큰을 추가하면 여기에도 등록한다. 이름은 tokens.css 의 @theme inline 과 맞춘다.
  */
 const FONT_SIZES = ['caption', 'body', 'bubble', 'title', 'display'];
-const TEXT_COLORS = ['ink', 'ink-soft', 'cta-ink', 'danger'];
+const TEXT_COLORS = ['ink', 'ink-soft', 'cta-ink', 'danger', 'done'];
 const SPACINGS = ['touch', 'touch-lg', 'record'];
 
 const twMerge = extendTailwindMerge({

@@ -323,3 +323,45 @@ export interface ActivityResult {
   completed: boolean;
   completedAt: string | null;
 }
+
+// ---------- 단어장 · 활동 기록 ----------
+/*
+ * 배포본 Swagger 에는 있으나 로컬 백엔드 체크아웃에는 아직 없는 API 다.
+ * 데모 브랜치에 없을 수도 있어 화면은 실패를 "아직 없음"으로 읽고 빈 상태를 보여준다.
+ */
+
+/** GET /children/{childId}/words */
+export interface WordInfo {
+  wordId: number;
+  word: string;
+  contextSentence: string | null;
+  meaning: string | null;
+  exampleSentence: string | null;
+  source: 'CHILD' | 'PARENT';
+  favorite: boolean;
+  learned: boolean;
+  createdAt: string;
+}
+
+export interface WordList {
+  totalCount: number;
+  favoriteCount: number;
+  words: WordInfo[];
+}
+
+/** GrowthInfo.recentSessions — "내 활동 기록"이 쓰는 부분 */
+export interface SessionSummary {
+  sessionId: number;
+  storyTitle: string;
+  status: string;
+  completedAt: string | null;
+  detectedElements: string[];
+}
+
+/** GET /children/{childId}/growth */
+export interface GrowthInfo {
+  totalSessions: number;
+  completedSessions: number;
+  elementCounts: Record<string, number>;
+  recentSessions: SessionSummary[];
+}
