@@ -6,6 +6,7 @@ import type { Phase } from '@/core/play-session/types';
 import { submitUtterance, synthesize, transcribe } from '@/features/play/api';
 import { loadScene, type NarrationPage } from '@/features/play/scene-source';
 import { hasUserGesture, useAudioOwnership } from '@/features/play/useAudioOwnership';
+import { characterVoice, NARRATOR_VOICE } from '@/features/play/voices';
 import { useMicLevel } from '@/features/play/use-mic-level';
 import { usePlayStore } from '@/features/play/usePlayStore';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
@@ -167,7 +168,7 @@ export function usePlaySession(sessionId: number) {
         case 'narrating': {
           const text = state.scene?.narrationSentences[phase.sentenceIndex] ?? '';
           try {
-            const voice = await synthesize(text);
+            const voice = await synthesize(text, NARRATOR_VOICE);
             narrationAudioRef.current.set(phase.sentenceIndex, voice);
             await audio.play(voice);
           } catch {
@@ -185,7 +186,7 @@ export function usePlaySession(sessionId: number) {
             { speaker: 'character', name: characterNameRef.current || '캐릭터', text },
           ]);
           try {
-            const voice = await synthesize(text);
+            const voice = await synthesize(text, characterVoice(characterNameRef.current));
             lineAudioRef.current = voice;
             await audio.play(voice);
           } catch {
@@ -314,7 +315,7 @@ export function usePlaySession(sessionId: number) {
     if (!text) return;
     void (async () => {
       try {
-        sceneAudioRef.current ??= await synthesize(text);
+        sceneAudioRef.current ??= await synthesize(text, NARRATOR_VOICE);
         await audio.play(sceneAudioRef.current);
       } catch {
         // 음성이 안 나와도 화면은 그대로다

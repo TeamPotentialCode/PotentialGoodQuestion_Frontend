@@ -239,6 +239,21 @@ export interface SttData {
   sttRawText: string;
 }
 
+/**
+ * POST /speech/tts 의 voice — 백엔드 TtsRequest 화이트리스트와 동일해야 한다.
+ * 틀린 값은 400, 생략하면 서버 기본(nova)이다
+ */
+export type TtsVoice =
+  | 'alloy'
+  | 'ash'
+  | 'coral'
+  | 'echo'
+  | 'fable'
+  | 'onyx'
+  | 'nova'
+  | 'sage'
+  | 'shimmer';
+
 // POST /speech/tts 응답은 봉투 없는 audio/mpeg 바이너리
 
 // ---------- 리포트 ----------

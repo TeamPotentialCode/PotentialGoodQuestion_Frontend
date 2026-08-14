@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { synthesize } from '@/features/play/api';
 import { useAudioOwnership } from '@/features/play/useAudioOwnership';
+import { NARRATOR_VOICE } from '@/features/play/voices';
 
 /**
  * 이야기 소개를 소리로 들려준다 (상세의 "이야기 듣기").
@@ -32,7 +33,7 @@ export function useIntroAudio(text: string) {
     setState('loading');
     void (async () => {
       try {
-        cached.current ??= await synthesize(text);
+        cached.current ??= await synthesize(text, NARRATOR_VOICE);
         setState('playing');
         await audio.play(cached.current);
       } catch {

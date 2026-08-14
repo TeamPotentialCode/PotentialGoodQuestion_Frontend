@@ -486,6 +486,12 @@ export const handlers = [
     await simulateLatency(400);
     const denied = requireAuth(request);
     if (denied) return denied;
+    // 실백엔드 TtsRequest 미러링: voice 는 화이트리스트 검증.
+    // 실측상 검증 실패는 400이 아니라 500으로 떨어진다 (2026-08-14 로컬 확인)
+    const body = (await request.json()) as { text?: string; voice?: string };
+    if (body.voice !== undefined && !/^(alloy|ash|coral|echo|fable|onyx|nova|sage|shimmer)$/.test(body.voice)) {
+      return fail(500, 'TTS_001', '서버 오류가 발생했습니다.');
+    }
     return HttpResponse.arrayBuffer(silentMp3().buffer as ArrayBuffer, {
       headers: { 'Content-Type': 'audio/mpeg' },
     });
