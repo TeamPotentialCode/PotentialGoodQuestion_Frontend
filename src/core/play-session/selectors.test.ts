@@ -59,6 +59,10 @@ describe('availableActions', () => {
     expect(availableActions(PHASES.narrating)).toEqual(['TAP_NEXT']);
   });
 
+  it('awaitingChild에는 버튼이 없다 — 마이크가 저절로 켜진다', () => {
+    expect(availableActions(PHASES.awaitingChild)).toEqual([]);
+  });
+
   it('장면이 끝나면 다음 장면으로, 이야기가 끝나면 아무 버튼도 없다', () => {
     expect(
       availableActions({ tag: 'sceneComplete', nextSceneId: 5, postActivity: false }),

@@ -41,19 +41,21 @@ async function skipNarration(page: Page) {
   }
 }
 
-/** 오디오 잠금 해제 → 도입 내레이션 → 첫 대사 재생 → 아이 차례 */
+/**
+ * 오디오 잠금 해제 → 도입 내레이션 → 첫 대사 재생 → 아이 차례.
+ * 시안 v3 부터 마이크가 저절로 켜지므로 awaitingChild 는 잠깐 스치고 recording 이 된다
+ */
 async function unlockAndWaitTurn(page: Page) {
   await expect(stage(page)).toHaveAttribute('data-state', 'locked');
   await page.getByRole('button', { name: '이야기 시작하기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
   await skipNarration(page);
-  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild', { timeout: 20000 });
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 20000 });
 }
 
 /** 아이 차례 한 번을 완주해 다음 상태까지 간다 */
 async function playOneTurn(page: Page) {
-  await page.getByRole('button', { name: '말하기' }).click();
-  await expect(stage(page)).toHaveAttribute('data-state', 'recording');
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 20000 });
   await page.waitForTimeout(300);
   await page.getByRole('button', { name: '보내기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'reviewing', { timeout: 20000 });
@@ -82,7 +84,8 @@ test('잠금 해제 전 도입 내레이션 2장을 넘긴 뒤 대화가 시작�
 
   // 마지막 내레이션을 넘기면 대화 장면이 시작된다
   await page.getByRole('button', { name: '다음 →' }).click();
-  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild', { timeout: 20000 });
+  // 마이크가 저절로 켜지므로 아이 차례는 recording 으로 나타난다
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 20000 });
   await expect(page.getByText('장면 1 / 4')).toBeVisible();
 });
 
@@ -90,14 +93,19 @@ test('잠금 해제 후 캐릭터 첫 대사가 나오고 아이 차례가 된�
   await enterPlay(page);
   await unlockAndWaitTurn(page);
 
-  // 고정 대사의 ㅇㅇ 는 치환하지 않고 주석으로 설명한다
-  await expect(page.getByText(/ㅇㅇ아, 사실 나는 방귀가 너무 커서 참고 있어/)).toBeVisible();
-  await expect(page.getByText('* ㅇㅇ = 아이 이름')).toBeVisible();
+  // 고정 대사의 ㅇㅇ 는 선택된 아이 이름으로 치환된다(시안: "민준아, …").
+  // 같은 문장이 "최근 이야기"에도 쌓이므로 큰 말풍선 하나만 본다
+  await expect(
+    page.getByText(/문열아, 사실 나는 방귀가 너무 커서 참고 있어/).first(),
+  ).toBeVisible();
+  await expect(page.getByText('ㅇㅇ아')).toBeHidden();
   // 헤더에 장면 진행도가 보인다
   await expect(page.getByText('장면 1 / 4')).toBeVisible();
   // 좌측에 장면 설명이 보인다
   await expect(page.getByText(/이야기를 나누는 장면입니다/)).toBeVisible();
-  await expect(page.getByRole('button', { name: '말하기' })).toBeVisible();
+  // 아이는 아무것도 누르지 않았는데 이미 듣고 있다
+  await expect(page.getByText('듣고 있어요!')).toBeVisible();
+  await expect(page.getByRole('button', { name: '보내기' })).toBeVisible();
 });
 
 test('다시 듣기를 눌러도 진행 상태는 그대로다', async ({ page }) => {
@@ -106,19 +114,17 @@ test('다시 듣기를 눌러도 진행 상태는 그대로다', async ({ page }
 
   await page.getByRole('button', { name: '캐릭터 대사 다시 듣기' }).click();
   await page.waitForTimeout(300);
-  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild');
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording');
 
   await page.getByRole('button', { name: '장면 설명 다시 듣기' }).click();
   await page.waitForTimeout(300);
-  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild');
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording');
 });
 
-test('한 턴을 완주한다: 말하기 → 보내기 → 확인 → 보내기 → 캐릭터 응답', async ({ page }) => {
+test('한 턴을 완주한다: 자동 녹음 → 보내기 → 확인 → 보내기 → 캐릭터 응답', async ({ page }) => {
   await enterPlay(page);
   await unlockAndWaitTurn(page);
 
-  await page.getByRole('button', { name: '말하기' }).click();
-  await expect(stage(page)).toHaveAttribute('data-state', 'recording');
   await page.waitForTimeout(400); // 실제로 잠깐 말하는 시간
 
   await page.getByRole('button', { name: '보내기' }).click();
@@ -127,18 +133,21 @@ test('한 턴을 완주한다: 말하기 → 보내기 → 확인 → 보내기 
   await expect(page.getByText('이렇게 말했나요?')).toBeVisible();
 
   await page.getByRole('button', { name: '보내기' }).click();
-  await expect(stage(page)).toHaveAttribute('data-state', 'awaitingChild', { timeout: 25000 });
+  // 응답 재생이 끝나면 다시 아이 차례 — 마이크가 저절로 켜진다
+  await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 25000 });
 
-  // 캐릭터 대사가 응답으로 교체된다(시안은 로그를 쌓지 않는다)
-  await expect(page.getByText(/그랬구나/)).toBeVisible();
-  await expect(page.getByText(/ㅇㅇ아, 사실 나는 방귀가 너무 커서/)).toBeHidden();
+  // 큰 말풍선은 새 응답으로 교체되고, 지나간 대사는 "최근 이야기"에 남는다
+  await expect(page.getByText(/그랬구나/).first()).toBeVisible();
+  const recent = page.getByRole('region', { name: '최근 이야기' });
+  await expect(recent.getByText(/문열아, 사실 나는 방귀가 너무 커서/)).toBeVisible();
+  // 아이가 한 말도 자기 이름으로 쌓인다
+  await expect(recent.getByText('문열 (나)')).toBeVisible();
 });
 
 test('확인 화면에서 다시 말하기를 누르면 녹음으로 돌아간다', async ({ page }) => {
   await enterPlay(page);
   await unlockAndWaitTurn(page);
 
-  await page.getByRole('button', { name: '말하기' }).click();
   await page.waitForTimeout(400);
   await page.getByRole('button', { name: '보내기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'reviewing', { timeout: 20000 });
@@ -161,7 +170,7 @@ test('대화 4장면을 완주하면 사후 활동으로 넘어간다', async ({
     await page.waitForFunction(
       () =>
         !document.querySelector('[data-testid=play-stage]') ||
-        ['awaitingChild', 'sceneComplete', 'narrating', 'error', 'fatal'].includes(
+        ['recording', 'sceneComplete', 'narrating', 'error', 'fatal'].includes(
           document.querySelector<HTMLElement>('[data-testid=play-stage]')?.dataset.state ?? '',
         ),
       null,
@@ -173,11 +182,11 @@ test('대화 4장면을 완주하면 사후 활동으로 넘어간다', async ({
     if (state === 'narrating') {
       await skipNarration(page);
     } else if (state === 'sceneComplete') {
-      const next = page.getByRole('button', { name: '다음 장면 →' });
+      const next = page.getByRole('button', { name: '다음 장면으로' });
       // 마지막 장면에는 "다음 장면"이 없다 — 사후 활동으로 넘어간다
       if (!(await next.isVisible())) break;
       await next.click();
-    } else if (state === 'awaitingChild') {
+    } else if (state === 'recording') {
       await playOneTurn(page);
     } else {
       throw new Error(`예상 못한 상태: ${state}`);
@@ -192,13 +201,12 @@ test('음성 인식에 실패하면 안내가 뜨고 다시 시도할 수 있다
   await unlockAndWaitTurn(page);
   await page.evaluate(() => window.__gqMock?.setScenario('stt-fail-once'));
 
-  await page.getByRole('button', { name: '말하기' }).click();
   await page.getByRole('button', { name: '보내기' }).click();
 
   await expect(stage(page)).toHaveAttribute('data-state', 'error', { timeout: 20000 });
   await expect(page.getByText(/한 번만 더/)).toBeVisible();
 
-  await page.getByRole('button', { name: '다시 시도' }).click();
+  await page.getByRole('button', { name: '다시 해보기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'recording');
 });
 
@@ -211,19 +219,20 @@ test('마이크를 못 켜면 그 자리에서 알려준다', async ({ page }) =
       Promise.reject(new DOMException('Permission denied', 'NotAllowedError'));
   });
   await enterPlay(page);
-  await unlockAndWaitTurn(page);
-
-  await page.getByRole('button', { name: '말하기' }).click();
+  // 마이크가 저절로 켜지려다 실패하므로 recording 을 거치지 않고 바로 error 가 된다
+  await expect(stage(page)).toHaveAttribute('data-state', 'locked');
+  await page.getByRole('button', { name: '이야기 시작하기' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
+  await skipNarration(page);
   await expect(stage(page)).toHaveAttribute('data-state', 'error', { timeout: 15000 });
   await expect(page.getByText('마이크를 쓸 수 있게 허용해 주세요.')).toBeVisible();
-  await expect(page.getByRole('button', { name: '다시 시도' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '다시 해보기' })).toBeVisible();
 });
 
 test('녹음 중에는 마이크 입력 크기가 보인다', async ({ page }) => {
   await enterPlay(page);
   await unlockAndWaitTurn(page);
 
-  await page.getByRole('button', { name: '말하기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'recording');
   // 소리가 들어오는지 눈으로 알 수 있어야 한다 (가짜 장치라 값 자체는 단언하지 않는다)
   await expect(page.getByTestId('mic-level')).toBeVisible();

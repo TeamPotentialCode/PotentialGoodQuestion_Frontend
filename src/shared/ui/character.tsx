@@ -13,6 +13,8 @@ interface CharacterProps extends HTMLAttributes<HTMLDivElement> {
   shape?: 'card' | 'circle';
   /** 이름을 아래에 함께 보여줄지 */
   showName?: boolean;
+  /** 이름 아래 한 줄 — 시안의 "기다리는 중…" / "말하는 중" 같은 상태 라벨 */
+  status?: string | null;
 }
 
 const box = cva('relative flex items-center justify-center bg-surface-raised', {
@@ -37,12 +39,13 @@ export function Character({
   size,
   shape,
   showName = false,
+  status = null,
   className,
   ...rest
 }: CharacterProps) {
   const round = shape === 'circle';
   return (
-    <div className={cn('flex flex-col items-center gap-2', className)} {...rest}>
+    <div className={cn('flex flex-col items-center gap-1', className)} {...rest}>
       {state === 'thinking' && (
         <div aria-hidden className="flex gap-1.5">
           <Dot delay="0ms" />
@@ -67,7 +70,12 @@ export function Character({
           <span className="absolute bottom-[22%] left-1/2 size-3 -translate-x-1/2 animate-pulse rounded-full bg-ink-soft" />
         )}
       </div>
-      {showName && <p className="text-body font-semibold text-ink">{name}</p>}
+      {showName && <p className="mt-1 text-body font-semibold text-ink">{name}</p>}
+      {status && (
+        <p className="text-caption text-ink-soft" aria-live="polite">
+          {status}
+        </p>
+      )}
     </div>
   );
 }

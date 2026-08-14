@@ -7,6 +7,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
+  // 한 턴에 TTS 재생 + STT + 분석이 줄줄이 붙고, 아이 차례 전환에도 잠깐 틈이 있다.
+  // 기본 30초로는 워커 4개가 동시에 돌 때 턱걸이라 넉넉히 잡는다
+  timeout: 60_000,
 
   use: {
     baseURL: 'http://127.0.0.1:3000',

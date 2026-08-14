@@ -8,7 +8,16 @@ import { loadScene, type NarrationPage } from '@/features/play/scene-source';
 import { useAudioOwnership } from '@/features/play/useAudioOwnership';
 import { useMicLevel } from '@/features/play/use-mic-level';
 import { usePlayStore } from '@/features/play/usePlayStore';
+import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getSession } from '@/features/story/api';
+
+/**
+ * 고정 대사에는 아이 이름 자리에 ㅇㅇ 가 박혀 온다.
+ * 이름을 모르면 원문을 그대로 둔다 — "아, 사실 나는" 처럼 어색해지는 것보다 낫다
+ */
+function withChildName(text: string, name: string): string {
+  return name ? text.replaceAll('ㅇㅇ', name) : text;
+}
 
 /**
  * 마이크·STT 가 왜 실패했는지는 화면 문구만으로는 알 수 없다.
@@ -18,6 +27,17 @@ function diagnose(what: string, detail: Record<string, unknown>): void {
   if (process.env.NODE_ENV === 'development') {
     console.info(`[음성] ${what}`, detail);
   }
+}
+
+/** "이제 네 차례야!" 를 보여주고 마이크를 켜기까지의 틈 */
+const CHILD_READY_DELAY_MS = 900;
+
+/** 시안 우측 하단 "최근 이야기" 한 줄 */
+export interface TurnLogEntry {
+  speaker: 'character' | 'child';
+  /** 화면에 그대로 찍는 이름. 아이는 "문열 (나)" 처럼 표시한다 */
+  name: string;
+  text: string;
 }
 
 interface SceneView {
@@ -40,12 +60,19 @@ interface SceneView {
 export function usePlaySession(sessionId: number) {
   const [state, dispatch] = usePlayStore();
   const audio = useAudioOwnership();
+  // 고정 대사의 ㅇㅇ 를 실제 이름으로 바꾸는 데 쓴다(시안: "민준아, …")
+  const childName = useSelectedChild(Number.isFinite(sessionId)).selected?.name ?? '';
+  const childNameRef = useRef(childName);
 
   const [scene, setScene] = useState<SceneView | null>(null);
-  // 시안은 대화 로그를 쌓지 않는다 — 지금 캐릭터 대사 하나만 보여준다
+  // 화면에 크게 보이는 건 지금 대사 하나뿐이고, 지나간 대사는 "최근 이야기"에 쌓인다
   const [characterLine, setCharacterLine] = useState('');
+  const [turnLog, setTurnLog] = useState<TurnLogEntry[]>([]);
   // 지금 불러올 장면. 장면을 완주하면 nextSceneId 로 갱신된다
   const [sceneCursor, setSceneCursor] = useState<number | null>(null);
+
+  // "최근 이야기" 에 적을 캐릭터 이름. 장면을 불러올 때 함께 채운다
+  const characterNameRef = useRef('');
 
   const pendingLineRef = useRef('');
   // 다시 듣기용 — 이미 받은 음성을 재사용해 TTS 를 다시 부르지 않는다
@@ -66,6 +93,22 @@ export function usePlaySession(sessionId: number) {
   useEffect(() => {
     return () => audio.releaseAll();
   }, [audio]);
+
+  // 이펙트는 phase 만 의존성으로 두므로 이름은 ref 로 건네준다
+  useEffect(() => {
+    childNameRef.current = childName;
+  }, [childName]);
+
+  /*
+   * 시안 v3: 캐릭터 TTS 가 끝나면 아이가 "말하기"를 누르지 않는다 — 마이크가 저절로 켜진다.
+   * 다만 곧바로 켜면 화면이 바뀐 걸 아이가 못 알아채므로 "이제 네 차례야!" 를 잠깐 보여준다.
+   * 마이크를 못 켜면 MIC_FAILED 가 error 로 보내고, 거기서 "다시 해보기" 로 복구한다
+   */
+  useEffect(() => {
+    if (state.phase.tag !== 'awaitingChild') return;
+    const timer = setTimeout(() => dispatch({ type: 'TAP_SPEAK' }), CHILD_READY_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [state.phase, dispatch]);
 
   useEffect(() => {
     const phase = state.phase;
@@ -98,8 +141,8 @@ export function usePlaySession(sessionId: number) {
               dialogueIndex: loaded.dialogueIndex,
               dialogueTotal: loaded.dialogueTotal,
             });
-            // 고정 대사의 ㅇㅇ 는 치환하지 않는다 — 시안이 원문을 두고 주석으로 설명한다
-            pendingLineRef.current = loaded.characterOpening;
+            characterNameRef.current = loaded.characterName;
+            pendingLineRef.current = withChildName(loaded.characterOpening, childNameRef.current);
             setCharacterLine('');
             dispatch({ type: 'SCENE_LOADED', scene: loaded.plan });
           } catch {
@@ -124,6 +167,10 @@ export function usePlaySession(sessionId: number) {
         case 'speaking': {
           const text = pendingLineRef.current;
           setCharacterLine(text);
+          setTurnLog((log) => [
+            ...log,
+            { speaker: 'character', name: characterNameRef.current || '캐릭터', text },
+          ]);
           try {
             const voice = await synthesize(text);
             lineAudioRef.current = voice;
@@ -185,6 +232,10 @@ export function usePlaySession(sessionId: number) {
             dispatch({ type: 'ANALYSIS_FAILED' });
             return;
           }
+          setTurnLog((log) => [
+            ...log,
+            { speaker: 'child', name: `${childNameRef.current || '나'} (나)`, text: transcript.text },
+          ]);
           idempotencyKeyRef.current ??= crypto.randomUUID();
           try {
             const data = await submitUtterance(
@@ -192,7 +243,10 @@ export function usePlaySession(sessionId: number) {
               { sceneId: plan.sceneId, text: transcript.text, sttRawText: transcript.sttRawText },
               idempotencyKeyRef.current,
             );
-            pendingLineRef.current = data.characterMessage.text;
+            pendingLineRef.current = withChildName(
+              data.characterMessage.text,
+              childNameRef.current,
+            );
             dispatch({
               type: 'ANALYSIS_SUCCEEDED',
               outcome: {
@@ -267,6 +321,7 @@ export function usePlaySession(sessionId: number) {
     scene,
     narrationPage,
     characterLine,
+    turnLog,
     micLevel,
     session,
     replayNarration,

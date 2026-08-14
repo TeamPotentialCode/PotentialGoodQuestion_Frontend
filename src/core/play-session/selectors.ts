@@ -40,7 +40,9 @@ export function availableActions(phase: Phase): PlayEvent['type'][] {
     case 'locked':
       return ['TAP_UNLOCK'];
     case 'awaitingChild':
-      return ['TAP_SPEAK'];
+      // 시안 v3: 캐릭터 말이 끝나면 마이크가 저절로 켜진다 — 아이가 누를 것이 없다.
+      // TAP_SPEAK 전이 자체는 남아 있고, 화면이 잠깐 뒤 스스로 보낸다
+      return [];
     case 'recording':
       return ['TAP_SEND'];
     case 'reviewing':

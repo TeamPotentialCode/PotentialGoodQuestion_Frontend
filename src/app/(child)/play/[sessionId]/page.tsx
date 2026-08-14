@@ -86,6 +86,7 @@ export default function PlayPage() {
             characterLine={characterLine}
             transcript={state.transcript?.text ?? null}
             micLevel={play.micLevel}
+            turnLog={play.turnLog}
             onAction={dispatch}
             onReplayScene={play.replaySceneDescription}
             onReplayLine={play.replayCharacterLine}

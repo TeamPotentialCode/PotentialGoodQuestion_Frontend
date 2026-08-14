@@ -51,13 +51,14 @@ export function PlayControls({ phase, onAction }: PlayControlsProps) {
           case 'TAP_NEXT_SCENE':
             return (
               <TouchTarget key={type} size="lg" onClick={() => onAction({ type })}>
-                다음 장면 →
+                다음 장면으로
               </TouchTarget>
             );
           case 'TAP_RETRY':
             return (
               <TouchTarget key={type} size="lg" onClick={() => onAction({ type })}>
-                다시 시도
+                <Icon name="refresh" className="size-5" />
+                다시 해보기
               </TouchTarget>
             );
           default:
