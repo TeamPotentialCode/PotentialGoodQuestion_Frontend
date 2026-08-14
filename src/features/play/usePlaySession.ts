@@ -100,6 +100,20 @@ export function usePlaySession(sessionId: number) {
   }, [childName]);
 
   /*
+   * 잠금 화면은 자동재생 정책용 "첫 클릭 보장" 장치일 뿐이다.
+   * 상세 화면의 "이야기 시작하기 →" 클릭으로 들어왔다면 이 문서에 이미 제스처가 있으므로
+   * 화면을 건너뛴다. 새로고침·주소 직접 입력(제스처 없음)이나
+   * userActivation 미지원 브라우저에서만 잠금 화면이 폴백으로 남는다
+   */
+  useEffect(() => {
+    if (state.phase.tag !== 'locked') return;
+    // 세션 응답이 와야 어느 장면부터인지 안다 — 사람 손가락은 버튼이 그려진 뒤(=로드 후)에나
+    // 누를 수 있었지만, 자동 해제는 마운트 직후라 여기서 직접 기다린다
+    if (!session.data) return;
+    if (navigator.userActivation?.hasBeenActive) dispatch({ type: 'TAP_UNLOCK' });
+  }, [state.phase, session.data, dispatch]);
+
+  /*
    * 시안 v3: 캐릭터 TTS 가 끝나면 아이가 "말하기"를 누르지 않는다 — 마이크가 저절로 켜진다.
    * 다만 곧바로 켜면 화면이 바뀐 걸 아이가 못 알아채므로 "이제 네 차례야!" 를 잠깐 보여준다.
    * 마이크를 못 켜면 MIC_FAILED 가 error 로 보내고, 거기서 "다시 해보기" 로 복구한다

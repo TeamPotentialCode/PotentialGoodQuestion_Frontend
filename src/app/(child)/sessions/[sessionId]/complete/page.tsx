@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useRequireAuth } from '@/features/auth/use-session';
 import { getSession } from '@/features/story/api';
+import { FINALE_IMAGE } from '@/features/story/images';
 import { Icon, ImageSlot, Screen, Stack, TouchTarget } from '@/shared/ui';
 
 export default function SessionCompletePage() {
@@ -33,7 +34,7 @@ export default function SessionCompletePage() {
   return (
     <Screen scrollable className="py-10" data-testid="session-complete">
       <Stack gap="lg" align="center" className="mx-auto w-full max-w-lg">
-        <ImageSlot label="완주 일러스트" className="w-full" />
+        <ImageSlot src={FINALE_IMAGE} label="완주 일러스트" className="w-full" />
 
         <Stack gap="sm" align="center">
           <h1 className="text-display font-semibold text-ink">오늘의 이야기를 모두 마쳤어!</h1>

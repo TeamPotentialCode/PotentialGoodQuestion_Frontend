@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { MISSION_COPY, type Phase, type PlayEvent } from '@/core/play-session/types';
 import { PlayControls } from '@/features/play/play-controls';
+import { missionImage } from '@/features/story/images';
 import type { TurnLogEntry } from '@/features/play/usePlaySession';
 import {
   Character,
@@ -18,6 +19,8 @@ import {
 
 interface PlayStageProps {
   phase: Phase;
+  /** 잠금 폴백 화면에서 장면 대신 보여줄 이야기 대표 삽화 */
+  storyThumbnail: string | null;
   characterName: string;
   sceneDescription: string;
   /** 장면 이미지 자리에 표시할 번호. 아직 못 불러왔으면 null */
@@ -65,6 +68,7 @@ function characterStatus(phase: Phase, name: string): string | null {
 // 시안: 좌측은 장면 이미지 + 장면 설명, 우측은 캐릭터와 아이 차례
 export function PlayStage({
   phase,
+  storyThumbnail,
   characterName,
   sceneDescription,
   dialogueIndex,
@@ -77,15 +81,16 @@ export function PlayStage({
   onReplayScene,
   onReplayLine,
 }: PlayStageProps) {
-  // analyzing 은 캐릭터 카드 안에 아바타를 다시 그린다 — 위쪽 아바타는 자리만 차지한다
-  const showTopCharacter = phase.tag !== 'analyzing';
+  // analyzing 은 캐릭터 카드 안에 아바타를 다시 그린다 — 위쪽 아바타는 자리만 차지한다.
+  // locked 폴백에서는 장면을 아직 모른다 — 캐릭터 자리 대신 시작 안내만 보여준다
+  const showTopCharacter = phase.tag !== 'analyzing' && phase.tag !== 'locked';
 
   return (
     <TwoPane
       left={
         <Stack gap="md">
           <ImageSlot
-            src={imageUrl}
+            src={phase.tag === 'locked' ? storyThumbnail : imageUrl}
             label={dialogueIndex ? `장면 ${dialogueIndex} 이미지` : '장면 이미지'}
           />
 
@@ -121,6 +126,11 @@ export function PlayStage({
             >
               “{characterLine}”
             </SpeechBubble>
+          )}
+
+          {/* 새로고침으로 바로 들어와 클릭 이력이 없을 때만 보이는 폴백 화면 */}
+          {phase.tag === 'locked' && (
+            <StatusCard title="이야기를 만날 준비 됐어?" hint="준비되면 아래를 눌러 줘!" />
           )}
 
           {phase.tag === 'awaitingChild' && (
@@ -206,6 +216,13 @@ export function PlayStage({
             <StatusCard
               title={MISSION_COPY[phase.missionType].title}
               hint={MISSION_COPY[phase.missionType].body}
+              header={
+                <ImageSlot
+                  src={missionImage(phase.missionType)}
+                  label="미션 그림"
+                  className="w-full max-w-96"
+                />
+              }
             >
               <p className="text-caption text-ink-soft">준비되면 아래를 눌러 줘. 네 차례가 시작돼!</p>
             </StatusCard>

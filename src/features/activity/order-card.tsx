@@ -10,6 +10,8 @@ interface OrderCardProps {
   slot: number;
   /** 순서를 맞힌 뒤. 카드마다 체크가 붙고 더는 옮기지 않는다 */
   solved?: boolean;
+  /** 카드 삽화. 없으면 회색 자리표시 */
+  imageUrl?: string | null;
 }
 
 /**
@@ -18,7 +20,7 @@ interface OrderCardProps {
  * 카드 id(card_1 …)는 정답 순서를 그대로 담고 있어 화면에 내보내지 않는다 —
  * data-card-id 는 E2E 단언용이며 사용자 눈에는 보이지 않는다.
  */
-export function OrderCard({ card, slot, solved = false }: OrderCardProps) {
+export function OrderCard({ card, slot, solved = false, imageUrl = null }: OrderCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     disabled: solved,
@@ -66,9 +68,16 @@ export function OrderCard({ card, slot, solved = false }: OrderCardProps) {
             <Icon name="check" className="size-4" />
           </span>
         )}
-        <span className="flex w-full flex-1 items-center justify-center rounded-card bg-surface-raised py-6 text-ink-soft">
-          <Icon name="image" className="size-8" />
-        </span>
+        {imageUrl ? (
+          <span className="w-full flex-1 overflow-hidden rounded-card bg-surface-raised">
+            {/* eslint-disable-next-line @next/next/no-img-element -- 프로젝트 정적 삽화 */}
+            <img src={imageUrl} alt="" className="size-full min-h-24 object-cover" />
+          </span>
+        ) : (
+          <span className="flex w-full flex-1 items-center justify-center rounded-card bg-surface-raised py-6 text-ink-soft">
+            <Icon name="image" className="size-8" />
+          </span>
+        )}
         <span className="text-caption text-ink">{card.text}</span>
         {!solved && <Icon name="grip" className="text-ink-soft" />}
       </button>

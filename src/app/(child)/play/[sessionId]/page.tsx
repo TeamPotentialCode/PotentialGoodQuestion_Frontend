@@ -8,6 +8,7 @@ import { PlayHeader } from '@/features/play/play-header';
 import { PlayNarration } from '@/features/play/play-narration';
 import { PlayStage } from '@/features/play/play-stage';
 import { usePlaySession } from '@/features/play/usePlaySession';
+import { storyThumbnail } from '@/features/story/images';
 import { Screen, Stack, TouchTarget } from '@/shared/ui';
 
 export default function PlayPage() {
@@ -79,6 +80,7 @@ export default function PlayPage() {
         ) : (
           <PlayStage
             phase={state.phase}
+            storyThumbnail={storyThumbnail(session.data.storyId)}
             characterName={scene?.characterName ?? ''}
             sceneDescription={scene?.sceneDescription ?? ''}
             dialogueIndex={scene?.dialogueIndex ?? null}

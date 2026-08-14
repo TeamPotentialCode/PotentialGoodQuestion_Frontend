@@ -25,6 +25,8 @@ import { activityErrorMessage } from '@/features/activity/error-message';
 import { saveHandoff } from '@/features/activity/handoff';
 import { OrderCard } from '@/features/activity/order-card';
 import { useRequireAuth } from '@/features/auth/use-session';
+import { getSession } from '@/features/story/api';
+import { activityCardImage } from '@/features/story/images';
 import { CardRow, Screen, Stack, TouchTarget } from '@/shared/ui';
 
 export default function PostOrderPage() {
@@ -45,6 +47,14 @@ export default function PostOrderPage() {
     enabled: authenticated && Number.isFinite(sessionId),
     staleTime: Infinity,
   });
+
+  // 카드 삽화는 storyId 로 찾는다. 대화 화면과 같은 키라 거기서 온 캐시를 그대로 쓴다
+  const session = useQuery({
+    queryKey: ['session', sessionId],
+    queryFn: () => getSession(sessionId),
+    enabled: authenticated && Number.isFinite(sessionId),
+  });
+  const storyId = session.data?.storyId ?? null;
 
   const order = moved ?? activity.data?.cards.map((card) => card.id) ?? [];
 
@@ -119,7 +129,13 @@ export default function PostOrderPage() {
               {order.map((id, index) => {
                 const card = cards.find((c) => c.id === id);
                 return card ? (
-                  <OrderCard key={id} card={card} slot={index + 1} solved={result === 'correct'} />
+                  <OrderCard
+                    key={id}
+                    card={card}
+                    slot={index + 1}
+                    solved={result === 'correct'}
+                    imageUrl={storyId === null ? null : activityCardImage(storyId, card.id)}
+                  />
                 ) : null;
               })}
             </CardRow>

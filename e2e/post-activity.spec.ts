@@ -194,7 +194,7 @@ test('다시 말하기: 말하고 보내면 완료 화면으로 간다', async (
   await page.getByRole('button', { name: '보내기' }).click();
   await page.waitForURL(new RegExp(`/sessions/${sessionId}/complete$`), { timeout: 20000 });
 
-  await expect(page.getByText('오늘의 이야기를 모두 마쳤어!')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '오늘의 이야기를 모두 마쳤어!' })).toBeVisible();
   await expect(page.getByText('방귀 뀌는 며느리')).toBeVisible();
   await page.getByRole('link', { name: '홈으로 가기' }).click();
   await page.waitForURL('**/home');

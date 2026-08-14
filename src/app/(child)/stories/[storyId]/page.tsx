@@ -8,6 +8,7 @@ import { isConsentMissing } from '@/features/child-profile/error-message';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getHome } from '@/features/home/api';
 import { getStoryDetail, startSession } from '@/features/story/api';
+import { storyThumbnail } from '@/features/story/images';
 import { useIntroAudio } from '@/features/story/use-intro-audio';
 import { Icon, ImageSlot, Screen, Stack, TouchTarget, TwoPane } from '@/shared/ui';
 
@@ -88,7 +89,7 @@ export default function StoryDetailPage() {
         <TwoPane
           left={
             <Stack gap="md">
-              <ImageSlot src={detail.thumbnailUrl} label="이야기 대표 이미지" />
+              <ImageSlot src={storyThumbnail(storyId) ?? detail.thumbnailUrl} label="이야기 대표 이미지" />
 
               <Stack direction="row" gap="sm" justify="center">
                 <SideAction

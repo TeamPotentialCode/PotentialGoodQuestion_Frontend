@@ -13,6 +13,8 @@ import {
   subscribeToHandoff,
 } from '@/features/activity/handoff';
 import { useRequireAuth } from '@/features/auth/use-session';
+import { getSession } from '@/features/story/api';
+import { activityCardImage } from '@/features/story/images';
 import { transcribe } from '@/features/play/api';
 import { useAudioOwnership } from '@/features/play/useAudioOwnership';
 import {
@@ -57,6 +59,14 @@ export default function PostRetellingPage() {
     enabled: authenticated && Number.isFinite(sessionId),
     staleTime: Infinity,
   });
+
+  // 카드 삽화용 storyId — 대화·순서 화면과 같은 캐시를 쓴다
+  const session = useQuery({
+    queryKey: ['session', sessionId],
+    queryFn: () => getSession(sessionId),
+    enabled: authenticated && Number.isFinite(sessionId),
+  });
+  const storyId = session.data?.storyId ?? null;
 
   const submit = useMutation({
     mutationFn: () =>
@@ -175,19 +185,29 @@ export default function PostRetellingPage() {
                 이야기 순서 (1 ~ {cards.length})
               </p>
               <CardRow>
-                {cards.map((card, i) => (
-                  <li
-                    key={card.id}
-                    className="flex flex-col items-center gap-2 rounded-card border border-line bg-surface p-3"
-                  >
-                    <span className="flex w-full items-center justify-center rounded-card bg-surface-raised py-5 text-ink-soft">
-                      <Icon name="image" className="size-6" />
-                    </span>
-                    <span className="flex size-6 items-center justify-center rounded-full bg-surface-raised text-caption text-ink">
-                      {i + 1}
-                    </span>
-                  </li>
-                ))}
+                {cards.map((card, i) => {
+                  const image = storyId === null ? null : activityCardImage(storyId, card.id);
+                  return (
+                    <li
+                      key={card.id}
+                      className="flex flex-col items-center gap-2 rounded-card border border-line bg-surface p-3"
+                    >
+                      {image ? (
+                        <span className="w-full overflow-hidden rounded-card bg-surface-raised">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- 프로젝트 정적 삽화 */}
+                          <img src={image} alt="" className="size-full min-h-20 object-cover" />
+                        </span>
+                      ) : (
+                        <span className="flex w-full items-center justify-center rounded-card bg-surface-raised py-5 text-ink-soft">
+                          <Icon name="image" className="size-6" />
+                        </span>
+                      )}
+                      <span className="flex size-6 items-center justify-center rounded-full bg-surface-raised text-caption text-ink">
+                        {i + 1}
+                      </span>
+                    </li>
+                  );
+                })}
               </CardRow>
 
               <Stack gap="sm">

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ContinueSession } from '@/core/api/types';
+import { storyThumbnail } from '@/features/story/images';
 import { ImageSlot, Stack, TouchTarget } from '@/shared/ui';
 
 interface ContinueCardProps {
@@ -26,7 +27,11 @@ export function ContinueCard({ session, estimatedMinutes, progress }: ContinueCa
       gap="md"
       className="rounded-card border border-line bg-surface p-4"
     >
-      <ImageSlot src={session.thumbnailUrl} label="이야기 썸네일" size="thumb" />
+      <ImageSlot
+        src={storyThumbnail(session.storyId) ?? session.thumbnailUrl}
+        label="이야기 썸네일"
+        size="thumb"
+      />
 
       <Stack gap="sm" className="min-w-0 flex-1">
         <p className="text-title font-bold text-ink">{session.storyTitle}</p>

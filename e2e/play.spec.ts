@@ -42,12 +42,11 @@ async function skipNarration(page: Page) {
 }
 
 /**
- * 오디오 잠금 해제 → 도입 내레이션 → 첫 대사 재생 → 아이 차례.
+ * 도입 내레이션 → 첫 대사 재생 → 아이 차례.
+ * 클릭으로 들어왔으므로 잠금 화면 없이 바로 내레이션이 시작되고,
  * 시안 v3 부터 마이크가 저절로 켜지므로 awaitingChild 는 잠깐 스치고 recording 이 된다
  */
 async function unlockAndWaitTurn(page: Page) {
-  await expect(stage(page)).toHaveAttribute('data-state', 'locked');
-  await page.getByRole('button', { name: '이야기 시작하기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
   await skipNarration(page);
   await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 20000 });
@@ -62,11 +61,10 @@ async function playOneTurn(page: Page) {
   await page.getByRole('button', { name: '보내기' }).click();
 }
 
-test('잠금 해제 전 도입 내레이션 2장을 넘긴 뒤 대화가 시작된다', async ({ page }) => {
+test('클릭으로 들어오면 잠금 화면 없이 도입 내레이션이 바로 시작된다', async ({ page }) => {
   await enterPlay(page);
-  await expect(stage(page)).toHaveAttribute('data-state', 'locked');
-  await page.getByRole('button', { name: '이야기 시작하기' }).click();
 
+  // 상세의 "이야기 시작하기 →" 클릭이 이미 제스처라 잠금 화면을 거치지 않는다
   // 1장: 헤더 배지와 내레이션 문장
   await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
   await expect(page.getByText('시작 (1/5)')).toBeVisible();
@@ -227,8 +225,6 @@ test('마이크를 못 켜면 그 자리에서 알려준다', async ({ page }) =
   });
   await enterPlay(page);
   // 마이크가 저절로 켜지려다 실패하므로 recording 을 거치지 않고 바로 error 가 된다
-  await expect(stage(page)).toHaveAttribute('data-state', 'locked');
-  await page.getByRole('button', { name: '이야기 시작하기' }).click();
   await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
   await skipNarration(page);
   await expect(stage(page)).toHaveAttribute('data-state', 'error', { timeout: 15000 });
@@ -243,4 +239,20 @@ test('녹음 중에는 마이크 입력 크기가 보인다', async ({ page }) =
   await expect(stage(page)).toHaveAttribute('data-state', 'recording');
   // 소리가 들어오는지 눈으로 알 수 있어야 한다 (가짜 장치라 값 자체는 단언하지 않는다)
   await expect(page.getByTestId('mic-level')).toBeVisible();
+});
+
+test('클릭 이력이 없으면 잠금 화면이 폴백으로 남는다', async ({ page }) => {
+  // 새로고침·주소 직접 입력을 흉내낸다 — sticky activation 이 없다고 브라우저가 답하게 한다
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userActivation', {
+      value: { hasBeenActive: false, isActive: false },
+    });
+  });
+  await enterPlay(page);
+
+  await expect(stage(page)).toHaveAttribute('data-state', 'locked');
+  await expect(page.getByText('이야기를 만날 준비 됐어?')).toBeVisible();
+  // 버튼을 누르면(=제스처) 평소처럼 내레이션이 시작된다
+  await page.getByRole('button', { name: '이야기 시작하기' }).click();
+  await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
 });

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { StorySummary } from '@/core/api/types';
+import { storyThumbnail } from '@/features/story/images';
 import { ImageSlot, Stack } from '@/shared/ui';
 
 /**
@@ -14,7 +15,7 @@ export function StoryCard({ story }: { story: StorySummary }) {
         className="flex w-full flex-col gap-3 rounded-card border-2 border-ink bg-surface p-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
       >
         {/* thumbnailUrl 은 시드에 실재하지 않는 더미 주소라 대개 자리표시로 떨어진다 */}
-        <ImageSlot src={story.thumbnailUrl} label="이미지 준비물" />
+        <ImageSlot src={storyThumbnail(story.storyId) ?? story.thumbnailUrl} label="이미지 준비물" />
 
         <Stack gap="sm">
           <p className="text-title font-semibold text-ink">{story.title}</p>

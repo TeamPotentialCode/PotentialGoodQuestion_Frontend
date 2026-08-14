@@ -1,6 +1,7 @@
 import { apiRequest } from '@/core/api/client';
 import type { SceneInfo } from '@/core/api/types';
 import type { ScenePlan } from '@/core/play-session/types';
+import { sceneImage } from '@/features/story/images';
 
 /**
  * 대화 화면이 장면을 얻는 유일한 통로.
@@ -91,9 +92,10 @@ export async function loadScene(storyId: number, fromSceneId: number): Promise<L
     preceding.unshift(scenes[i]);
   }
 
+  // 백엔드 imageUrl 은 실재하지 않는 더미라 프로젝트 삽화를 먼저 본다
   const pages: NarrationPage[] = preceding.map((scene) => ({
     text: scene.sceneDescription,
-    imageUrl: scene.imageUrl,
+    imageUrl: sceneImage(storyId, scene.sceneOrder) ?? scene.imageUrl,
     narrationIndex: narrations.indexOf(scene) + 1,
   }));
 
@@ -108,7 +110,7 @@ export async function loadScene(storyId: number, fromSceneId: number): Promise<L
     characterOpening: current.characterOpening ?? '',
     // 대화 장면 자기 설명은 내레이션이 아니라 대화 화면 좌측 카드에 쓴다
     sceneDescription: current.sceneDescription,
-    imageUrl: current.imageUrl,
+    imageUrl: sceneImage(storyId, current.sceneOrder) ?? current.imageUrl,
     narration: pages,
     narrationTotal: narrations.length,
     dialogueIndex: dialogues.indexOf(current) + 1,

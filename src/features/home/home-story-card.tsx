@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { StorySummary } from '@/core/api/types';
+import { storyThumbnail } from '@/features/story/images';
 import { ImageSlot, Stack } from '@/shared/ui';
 
 /**
@@ -14,7 +15,7 @@ export function HomeStoryCard({ story }: { story: StorySummary }) {
         href={`/stories/${story.storyId}`}
         className="flex w-full flex-col gap-3 rounded-card border border-line bg-surface p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
       >
-        <ImageSlot src={story.thumbnailUrl} label="이야기 썸네일" />
+        <ImageSlot src={storyThumbnail(story.storyId) ?? story.thumbnailUrl} label="이야기 썸네일" />
         <Stack gap="sm">
           <Stack direction="row" align="center" justify="between" gap="sm">
             <span className="rounded-full bg-ink px-3 py-1 text-caption text-cta-ink">
