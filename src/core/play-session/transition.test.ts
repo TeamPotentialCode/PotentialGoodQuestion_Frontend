@@ -228,6 +228,57 @@ describe('transition', () => {
     expect(s.consecutiveFailures).toBe(0);
   });
 
+  it('15. showMission이면 캐릭터 대사가 끝난 뒤 미션이 뜨고, 닫으면 아이 차례다', () => {
+    let s = run(
+      [
+        { type: 'TAP_SPEAK' },
+        { type: 'TAP_SEND' },
+        { type: 'STT_SUCCEEDED', transcript: TRANSCRIPT },
+        { type: 'TAP_SEND' },
+        {
+          type: 'ANALYSIS_SUCCEEDED',
+          outcome: outcome({ showMission: true, missionType: 'MISSION_1' }),
+        },
+      ],
+      atAwaitingChild(),
+    );
+    // 대사 재생 중에는 아직 미션이 아니다 — 응답이 아니라 대사 종료가 트리거다
+    expect(s.phase).toEqual({ tag: 'speaking', kind: 'reply' });
+    expect(s.pendingMission).toBe('MISSION_1');
+
+    s = transition(s, { type: 'SPEECH_ENDED' });
+    expect(s.phase).toEqual({ tag: 'mission', missionType: 'MISSION_1' });
+    expect(s.pendingMission).toBeNull();
+
+    s = transition(s, { type: 'MISSION_DISMISSED' });
+    expect(s.phase).toEqual({ tag: 'awaitingChild' });
+  });
+
+  it('16. 장면이 끝나는 턴에 온 미션 신호는 버린다 — 장면이 끝나면 미션도 의미가 없다', () => {
+    const s = run(
+      [
+        { type: 'TAP_SPEAK' },
+        { type: 'TAP_SEND' },
+        { type: 'STT_SUCCEEDED', transcript: TRANSCRIPT },
+        { type: 'TAP_SEND' },
+        {
+          type: 'ANALYSIS_SUCCEEDED',
+          outcome: outcome({
+            sceneCompleted: true,
+            isClosing: true,
+            nextSceneId: 5,
+            showMission: true,
+            missionType: 'MISSION_2',
+          }),
+        },
+        { type: 'SPEECH_ENDED' },
+      ],
+      atAwaitingChild(),
+    );
+    expect(s.phase).toEqual({ tag: 'sceneComplete', nextSceneId: 5, postActivity: false });
+    expect(s.pendingMission).toBeNull();
+  });
+
   it('14. transition은 입력 state를 변경하지 않는다', () => {
     const transcribing = run([{ type: 'TAP_SPEAK' }, { type: 'TAP_SEND' }], atAwaitingChild());
     const snapshot = structuredClone(transcribing);

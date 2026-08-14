@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { Phase, PlayEvent } from '@/core/play-session/types';
+import { MISSION_COPY, type Phase, type PlayEvent } from '@/core/play-session/types';
 import { PlayControls } from '@/features/play/play-controls';
 import type { TurnLogEntry } from '@/features/play/usePlaySession';
 import {
@@ -196,6 +196,19 @@ export function PlayStage({
                 {transcript}
               </SpeechBubble>
             </Stack>
+          )}
+
+          {/*
+           * 미션 안내 — 결과를 제출하는 API 는 없다. 아이가 읽고 **말로 답하면**
+           * 그 발화가 utterances 로 흘러가 캐릭터 대화에 반영된다(MVP 문서 §4)
+           */}
+          {phase.tag === 'mission' && (
+            <StatusCard
+              title={MISSION_COPY[phase.missionType].title}
+              hint={MISSION_COPY[phase.missionType].body}
+            >
+              <p className="text-caption text-ink-soft">준비되면 아래를 눌러 줘. 네 차례가 시작돼!</p>
+            </StatusCard>
           )}
 
           {(phase.tag === 'error' || phase.tag === 'fatal') && (

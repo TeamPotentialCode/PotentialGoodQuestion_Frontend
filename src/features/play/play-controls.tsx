@@ -48,6 +48,12 @@ export function PlayControls({ phase, onAction }: PlayControlsProps) {
                 다시 말하기
               </TouchTarget>
             );
+          case 'MISSION_DISMISSED':
+            return (
+              <TouchTarget key={type} size="lg" onClick={() => onAction({ type })}>
+                알겠어! 말해 볼게
+              </TouchTarget>
+            );
           case 'TAP_NEXT_SCENE':
             return (
               <TouchTarget key={type} size="lg" onClick={() => onAction({ type })}>

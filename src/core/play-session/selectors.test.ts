@@ -13,6 +13,7 @@ const PHASES: Record<PhaseTag, Phase> = {
   transcribing: { tag: 'transcribing' },
   reviewing: { tag: 'reviewing' },
   analyzing: { tag: 'analyzing' },
+  mission: { tag: 'mission', missionType: 'MISSION_1' },
   error: { tag: 'error', message: '오류', attempt: 1 },
   sceneComplete: { tag: 'sceneComplete', nextSceneId: null, postActivity: true },
   fatal: { tag: 'fatal', message: '오류' },
@@ -61,6 +62,10 @@ describe('availableActions', () => {
 
   it('awaitingChild에는 버튼이 없다 — 마이크가 저절로 켜진다', () => {
     expect(availableActions(PHASES.awaitingChild)).toEqual([]);
+  });
+
+  it('mission은 닫기 하나다 — 읽고 나서 말로 답한다', () => {
+    expect(availableActions(PHASES.mission)).toEqual(['MISSION_DISMISSED']);
   });
 
   it('장면이 끝나면 다음 장면으로, 이야기가 끝나면 아무 버튼도 없다', () => {

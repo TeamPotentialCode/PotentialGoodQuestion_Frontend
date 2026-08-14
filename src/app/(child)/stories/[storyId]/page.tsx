@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useRequireAuth } from '@/features/auth/use-session';
+import { isConsentMissing } from '@/features/child-profile/error-message';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getHome } from '@/features/home/api';
 import { getStoryDetail, startSession } from '@/features/story/api';
@@ -161,11 +162,27 @@ export default function StoryDetailPage() {
         />
 
         <Stack gap="sm" align="center" className="pt-2">
-          {start.isError && (
-            <p role="alert" className="text-body text-ink">
-              이야기를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.
-            </p>
-          )}
+          {/*
+           * 동의 없는 아이는 백엔드가 세션 시작을 404 로 막는다(2026-08-14 반영).
+           * 동의 화면이 생기기 전에 등록된 아이가 여기에 걸리므로 막다른 안내 대신 동의로 보낸다
+           */}
+          {start.isError &&
+            (isConsentMissing(start.error) && child.selected ? (
+              <Stack gap="sm" align="center">
+                <p role="alert" className="text-body text-ink">
+                  이야기를 시작하려면 보호자 동의가 필요해요.
+                </p>
+                <Link
+                  href={`/children/${child.selected.childId}/consent?next=/stories/${storyId}`}
+                >
+                  <TouchTarget size="lg">동의하러 가기</TouchTarget>
+                </Link>
+              </Stack>
+            ) : (
+              <p role="alert" className="text-body text-ink">
+                이야기를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.
+              </p>
+            ))}
 
           {noChild ? (
             <Stack gap="sm" align="center">

@@ -61,11 +61,27 @@ export function transition(state: PlayState, event: PlayEvent): PlayState {
         return {
           ...state,
           completion: null,
+          // 장면이 끝나면 미션도 의미가 없다 — 남은 신호는 버린다
+          pendingMission: null,
           phase: { tag: 'sceneComplete', nextSceneId, postActivity: nextSceneId === null },
+        };
+      }
+      // 백엔드가 미션을 켜라고 했으면 캐릭터 대사가 끝난 지금 보여준다.
+      // 응답이 온 순간이 아니라 대사가 끝난 뒤여야 아이가 대사를 놓치지 않는다
+      if (state.pendingMission !== null) {
+        return {
+          ...state,
+          pendingMission: null,
+          phase: { tag: 'mission', missionType: state.pendingMission },
         };
       }
       return { ...state, phase: { tag: 'awaitingChild' } };
     }
+
+    // 미션을 읽고 닫으면 아이 차례 — 화면이 마이크를 저절로 켠다
+    case 'MISSION_DISMISSED':
+      if (phase.tag !== 'mission') return state;
+      return { ...state, phase: { tag: 'awaitingChild' } };
 
     case 'TAP_SPEAK':
       if (phase.tag !== 'awaitingChild') return state;
@@ -128,17 +144,22 @@ export function transition(state: PlayState, event: PlayEvent): PlayState {
       // 재녹음 시 기존 임시 결과 폐기
       return { ...state, transcript: null, phase: { tag: 'recording' } };
 
-    case 'ANALYSIS_SUCCEEDED':
+    case 'ANALYSIS_SUCCEEDED': {
       if (phase.tag !== 'analyzing') return state;
+      // 미션 신호는 대사 재생이 끝날 때까지 들고 있는다
+      const pendingMission =
+        event.outcome.showMission === true ? (event.outcome.missionType ?? null) : null;
       if (event.outcome.sceneCompleted) {
         return {
           ...state,
           transcript: null,
+          pendingMission,
           completion: { nextSceneId: event.outcome.nextSceneId },
           phase: { tag: 'speaking', kind: 'closing' },
         };
       }
-      return { ...state, transcript: null, phase: { tag: 'speaking', kind: 'reply' } };
+      return { ...state, transcript: null, pendingMission, phase: { tag: 'speaking', kind: 'reply' } };
+    }
 
     case 'ANALYSIS_FAILED':
       if (phase.tag !== 'analyzing') return state;

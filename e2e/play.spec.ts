@@ -162,6 +162,8 @@ test('대화 4장면을 완주하면 사후 활동으로 넘어간다', async ({
   await enterPlay(page);
   await unlockAndWaitTurn(page);
 
+  // 미션(씬7·씬9)은 문서상 "반드시 등장" — 완주 중 실제로 떴는지도 함께 확인한다
+  let missionSeen = false;
   // 장면이 끝나면 "다음 장면"이 나오고, 그 사이 내레이션을 한 장 더 넘긴다.
   // 마지막 장면까지 끝나면 사후 활동으로 이동한다.
   // 장면당 2~3턴이라 넉넉히 돈다 — 사후 활동에 도착하면 빠져나온다
@@ -170,7 +172,7 @@ test('대화 4장면을 완주하면 사후 활동으로 넘어간다', async ({
     await page.waitForFunction(
       () =>
         !document.querySelector('[data-testid=play-stage]') ||
-        ['recording', 'sceneComplete', 'narrating', 'error', 'fatal'].includes(
+        ['recording', 'sceneComplete', 'narrating', 'mission', 'error', 'fatal'].includes(
           document.querySelector<HTMLElement>('[data-testid=play-stage]')?.dataset.state ?? '',
         ),
       null,
@@ -186,6 +188,10 @@ test('대화 4장면을 완주하면 사후 활동으로 넘어간다', async ({
       // 마지막 장면에는 "다음 장면"이 없다 — 사후 활동으로 넘어간다
       if (!(await next.isVisible())) break;
       await next.click();
+    } else if (state === 'mission') {
+      // 미션은 안내를 읽고 닫으면 아이 차례가 된다 (씬7 미션1 · 씬9 미션2)
+      missionSeen = true;
+      await page.getByRole('button', { name: '알겠어! 말해 볼게' }).click();
     } else if (state === 'recording') {
       await playOneTurn(page);
     } else {
@@ -194,6 +200,7 @@ test('대화 4장면을 완주하면 사후 활동으로 넘어간다', async ({
   }
 
   await page.waitForURL(/\/post\/order$/, { timeout: 30000 });
+  expect(missionSeen).toBe(true);
 });
 
 test('음성 인식에 실패하면 안내가 뜨고 다시 시도할 수 있다', async ({ page }) => {

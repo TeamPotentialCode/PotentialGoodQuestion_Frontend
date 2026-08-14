@@ -12,3 +12,14 @@ export function childErrorMessage(error: unknown): string {
   }
   return '연결에 문제가 있어요. 네트워크를 확인해 주세요.';
 }
+
+/**
+ * 세션 시작이 "아동 동의 없음"으로 막혔는지.
+ *
+ * 백엔드는 code 필드 없이 404 + "유효한 동의 정보를 찾을 수 없습니다." 만 준다
+ * (StorySessionService, CHILD_004). 같은 404 라도 이야기·세션 없음과 문구가 달라
+ * 메시지의 "동의" 로 구분한다 — 동의 화면이 생기기 전에 등록된 아이가 여기에 걸린다.
+ */
+export function isConsentMissing(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404 && error.message.includes('동의');
+}

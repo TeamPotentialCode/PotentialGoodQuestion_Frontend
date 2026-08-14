@@ -88,6 +88,34 @@ test('이미 진행 중이면 시작하기 대신 이어하기를 보여준다',
   expect(page.url()).toBe(firstSession); // 새 세션을 만들지 않았다
 });
 
+test('동의 없는 아이는 세션 시작이 막히고 동의 화면으로 안내한다', async ({ page }) => {
+  // 실백엔드가 2026-08-14 부터 동의 없는 세션 시작을 404 로 막는다.
+  // 동의 화면이 생기기 전에 등록된 아이가 이 상태다 — 철회로 같은 상태를 만든다
+  await startFresh(page);
+  await page.evaluate(async () => {
+    await fetch('/api/children/1/consent', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('gq:accessToken')}` },
+    });
+  });
+
+  await page.getByRole('link', { name: /방귀 뀌는 며느리/ }).first().click();
+  await page.waitForURL('**/stories/1');
+  await page.getByRole('button', { name: '이야기 시작하기 →' }).click();
+
+  // 막다른 오류 대신 원인과 다음 행동을 알려준다
+  await expect(page.getByText('이야기를 시작하려면 보호자 동의가 필요해요.')).toBeVisible();
+  await page.getByRole('link', { name: '동의하러 가기' }).click();
+  await page.waitForURL(/\/children\/1\/consent/);
+
+  // 동의를 마치면 보던 이야기로 돌아와 이어서 시작할 수 있다
+  await page.getByLabel('아동 개인정보 수집·이용 동의 (필수)').check();
+  await page.getByRole('button', { name: '동의하고 계속하기' }).click();
+  await page.waitForURL('**/stories/1');
+  await page.getByRole('button', { name: '이야기 시작하기 →' }).click();
+  await page.waitForURL(/\/play\/\d+$/);
+});
+
 test('아이가 없으면 시작 대신 등록 안내를 보여준다', async ({ page }) => {
   // clearChildren 은 저장소에 기록되므로 새로고침·주소 직접 입력에도 유지된다
   await startFresh(page, { withoutChildren: true });

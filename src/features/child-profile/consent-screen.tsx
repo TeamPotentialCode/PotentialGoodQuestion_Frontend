@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import type { Child } from '@/core/api/types';
 import { createConsent } from '@/features/child-profile/api';
@@ -25,6 +25,10 @@ import { Icon, Screen, Stack, TouchTarget } from '@/shared/ui';
 export function ConsentScreen({ child }: { child: Child }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  // 세션 시작이 동의 부족으로 막혀서 온 경우, 끝나면 보던 이야기로 돌려보낸다.
+  // 외부 주소로 새는 것을 막으려고 내부 경로(/)만 받는다
+  const rawNext = useSearchParams().get('next');
+  const next = rawNext?.startsWith('/') ? rawNext : '/children';
   const [agreed, setAgreed] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -39,7 +43,7 @@ export function ConsentScreen({ child }: { child: Child }) {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['children'] });
-      router.replace('/children');
+      router.replace(next);
     },
   });
 

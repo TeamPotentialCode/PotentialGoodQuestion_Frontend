@@ -146,6 +146,18 @@ function childrenOf(parentId: number): Child[] {
     // 시드 보호자만 아이를 하나 갖고 시작한다. 새로 가입한 계정은 비어 있다
     const seeded = parentId === SEED_USER.parentId && !noChildrenFlag() ? [seedChild()] : [];
     childrenByParent.set(parentId, seeded);
+    // 시드 아이는 동의까지 마친 상태로 시작한다 — 매 테스트가 동의 화면을 거치지 않아도 되게.
+    // "동의 없음" 경로는 테스트가 DELETE /consent 로 철회해서 만든다
+    for (const child of seeded) {
+      consentsByChild.set(child.childId, {
+        consentId: nextConsentId++,
+        childId: child.childId,
+        consentVersion: 'mvp_v1',
+        verificationMethod: 'authenticated_parent',
+        consentedAt: '2026-08-08T09:00:00',
+        active: true,
+      });
+    }
   }
   return childrenByParent.get(parentId)!;
 }
@@ -404,6 +416,14 @@ export const handlers = [
     const denied = requireAuth(request);
     if (denied) return denied;
     const body = (await request.json()) as { childId: number };
+    // 아이·동의 시드는 게으르게 만들어진다 — 목록 조회 없이 바로 세션을 만드는
+    // API 테스트도 시드 아이의 동의를 보게 먼저 시드를 깨운다
+    childrenOf(parentIdOf(request));
+    // 실백엔드 StorySessionService.createSession 미러링(4b40a73):
+    // 유효한 동의가 없으면 세션 시작 불가 — 404 CHILD_004
+    if (!consentsByChild.has(body.childId)) {
+      return fail(404, 'CHILD_004', '유효한 동의 정보를 찾을 수 없습니다.');
+    }
     const { sessionId } = createSession(Number(params.storyId), body.childId);
     const session = getSession(sessionId);
     return ok(toSessionInfo(session!), 201);

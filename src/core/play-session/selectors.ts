@@ -20,6 +20,7 @@ export function hardwareOwner(phase: Phase): 'none' | 'mic' | 'speaker' {
     case 'transcribing':
     case 'reviewing':
     case 'analyzing':
+    case 'mission':
     case 'error':
     case 'sceneComplete':
     case 'fatal':
@@ -54,6 +55,8 @@ export function availableActions(phase: Phase): PlayEvent['type'][] {
       return phase.postActivity ? [] : ['TAP_NEXT_SCENE'];
     case 'narrating':
       return ['TAP_NEXT'];
+    case 'mission':
+      return ['MISSION_DISMISSED'];
     case 'loading':
     case 'speaking':
     case 'transcribing':
