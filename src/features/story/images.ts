@@ -32,6 +32,16 @@ export function missionImage(type: MissionType): string {
 export const FINALE_IMAGE = `${BASE}/finale.jpg`;
 
 /**
+ * 장면 마무리 연출 컷. 콘텐츠 문서: "(대화3) 마지막 대사 이후에는
+ * 며느리의 방귀로 배가 떨어지는 결과 연출이 이어진다" — DB 에 별도 장면이 없어
+ * 마무리 대사가 재생되는 동안 왼쪽 이미지를 이 컷으로 바꿔 연출한다
+ */
+export function sceneClosingImage(storyId: number, sceneId: number): string | null {
+  if (storyId !== ILLUSTRATED_STORY_ID) return null;
+  return sceneId === 7 ? FINALE_IMAGE : null; // 대화3 (마을 이장, 배나무)
+}
+
+/**
  * 말하기 후 활동 카드 삽화. 카드 id 는 정답 순서(card_1~5)를 담고 있고
  * 텍스트가 이야기 국면과 1:1 이라 국면 삽화를 붙인다:
  * 1 방귀를 참는 며느리 / 2 방귀 폭발 / 3 친정길 / 4 배 떨어뜨리기 / 5 화해

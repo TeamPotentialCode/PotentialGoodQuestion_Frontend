@@ -9,6 +9,7 @@ import { PlayNarration } from '@/features/play/play-narration';
 import { PlayStage } from '@/features/play/play-stage';
 import { hasUserGesture } from '@/features/play/useAudioOwnership';
 import { usePlaySession } from '@/features/play/usePlaySession';
+import { sceneClosingImage } from '@/features/story/images';
 import { Screen, Stack, TouchTarget } from '@/shared/ui';
 
 export default function PlayPage() {
@@ -83,6 +84,10 @@ export default function PlayPage() {
           }
         />
 
+        {/*
+         * 콘텐츠 문서: 대화3 마무리 대사 뒤에는 "방귀로 배가 떨어지는 결과 연출"이 이어진다.
+         * DB 에 별도 장면이 없어, 마무리 대사~장면 완료 동안 왼쪽 컷을 연출 이미지로 바꾼다
+         */}
         {narrationPage ? (
           <PlayNarration
             page={narrationPage}
@@ -96,7 +101,12 @@ export default function PlayPage() {
             characterName={scene?.characterName ?? ''}
             sceneDescription={scene?.sceneDescription ?? ''}
             dialogueIndex={scene?.dialogueIndex ?? null}
-            imageUrl={scene?.imageUrl ?? null}
+            imageUrl={
+              ((state.phase.tag === 'speaking' && state.phase.kind === 'closing') ||
+              state.phase.tag === 'sceneComplete'
+                ? sceneClosingImage(session.data.storyId, state.scene?.sceneId ?? -1)
+                : null) ?? scene?.imageUrl ?? null
+            }
             characterLine={characterLine}
             transcript={state.transcript?.text ?? null}
             micLevel={play.micLevel}
