@@ -1,5 +1,12 @@
 // 마이크 녹음. 순수 TS — react/next 를 import 하지 않는다(C-01 레이어 규칙).
 // features/play/useAudioOwnership.ts 에서만 사용한다.
+import { audioLog, sharedAudioContext } from '@/core/audio/player';
+
+function alog(message: string): void {
+  const stamp = typeof performance !== 'undefined' ? `${(performance.now() / 1000).toFixed(1)}s` : '';
+  audioLog.push(`${stamp} ${message}`);
+  if (audioLog.length > 60) audioLog.shift();
+}
 
 export interface Recording {
   /** 녹음을 멈추고 오디오 Blob 을 돌려준다. 마이크도 함께 해제한다 */
@@ -24,19 +31,29 @@ export async function startRecording(): Promise<Recording> {
     if (event.data.size > 0) chunks.push(event.data);
   };
   recorder.start();
+  alog(`녹음 시작 (${recorder.mimeType || '기본 포맷'}, ctx=${sharedAudioContext()?.state ?? '없음'})`);
 
-  // 입력 크기 측정용. 녹음 자체와는 무관하고, 실패해도 녹음은 그대로 진행한다
-  let context: AudioContext | null = null;
+  /*
+   * 입력 크기 측정용. 녹음 자체와는 무관하고, 실패해도 녹음은 그대로 진행한다.
+   * 예전에는 여기서 자체 AudioContext 를 만들고 닫았는데, iOS 가 그 생성·폐기 때마다
+   * 오디오 세션을 흔들어 재생 컨텍스트를 interrupted 로 떨어뜨렸다 — 공유 컨텍스트를 쓴다
+   */
+  let sourceNode: MediaStreamAudioSourceNode | null = null;
   let analyser: AnalyserNode | null = null;
   let samples: Float32Array<ArrayBuffer> | null = null;
   try {
-    context = new AudioContext();
-    analyser = context.createAnalyser();
-    analyser.fftSize = 2048;
-    context.createMediaStreamSource(stream).connect(analyser);
-    samples = new Float32Array(analyser.fftSize);
+    const context = sharedAudioContext();
+    if (context) {
+      analyser = context.createAnalyser();
+      analyser.fftSize = 2048;
+      sourceNode = context.createMediaStreamSource(stream);
+      sourceNode.connect(analyser);
+      samples = new Float32Array(analyser.fftSize);
+    }
   } catch {
-    context = null;
+    sourceNode = null;
+    analyser = null;
+    samples = null;
   }
 
   return {
@@ -54,9 +71,17 @@ export async function startRecording(): Promise<Recording> {
           // 순서가 중요하다: recorder 를 먼저 멈추고 그다음 트랙을 해제한다.
           // 반대로 하면 iOS 에서 재생 볼륨이 수화기 경로로 남아 복구되지 않는다
           stream.getTracks().forEach((track) => track.stop());
-          // 안 닫으면 탭에 AudioContext 가 쌓인다(브라우저당 개수 제한이 있다)
-          void context?.close();
-          resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }));
+          // 공유 컨텍스트는 닫지 않는다 — 미터 연결만 끊는다
+          try {
+            sourceNode?.disconnect();
+            analyser?.disconnect();
+          } catch {
+            // 이미 끊겨 있어도 무해하다
+          }
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          // iOS 진단의 핵심 지점: 마이크가 끝난 직후 재생 컨텍스트가 살아 있는가
+          alog(`녹음 종료 (${Math.round(blob.size / 1024)}KB, ctx=${sharedAudioContext()?.state ?? '없음'})`);
+          resolve(blob);
         };
         recorder.stop();
       }),

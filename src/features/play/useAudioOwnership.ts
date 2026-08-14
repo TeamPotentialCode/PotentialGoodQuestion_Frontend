@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useRef } from 'react';
-import { playBlob, type AudioPlayback } from '@/core/audio/player';
+import { playBlob, recoverAudio, type AudioPlayback } from '@/core/audio/player';
 import { startRecording, type Recording } from '@/core/audio/recorder';
 
 // 자동재생을 시도해도 되는지의 판단 근거. 재생 제어가 아니라 조회라 여기서 재수출한다
@@ -58,7 +58,10 @@ export function useAudioOwnership() {
     const recording = recordingRef.current;
     if (!recording) return null;
     recordingRef.current = null;
-    return recording.stop();
+    const blob = await recording.stop();
+    // iOS: 마이크가 오디오 세션을 되돌린 직후가 재생 컨텍스트를 되살릴 적기다
+    recoverAudio();
+    return blob;
   }, []);
 
   /** 지금 마이크로 들어오는 소리 크기 (0~1). 녹음 중이 아니면 0 */
