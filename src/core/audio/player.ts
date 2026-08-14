@@ -18,44 +18,11 @@ export interface AudioPlayback {
  */
 let sharedContext: AudioContext | null = null;
 
-/** WebKit 진단용 — 마지막 재생 경로·상태를 남긴다 (#audio-debug 오버레이가 읽는다) */
-export const audioDiag = {
-  path: '아직 없음' as string,
-  error: '' as string,
-  contextState: (): string => sharedContext?.state ?? '컨텍스트 없음',
-};
-
-/*
- * 사건 로그 — 실기기(아이패드)에는 콘솔이 없어서, 오버레이 스크린샷 한 장으로
- * "무슨 순서로 무엇이 실패했는지" 를 읽을 수 있게 최근 사건을 굴려 담는다.
- * #audio-debug 가 켜져 있으면 콘솔에도 같이 남긴다(데스크톱 디버깅용)
- */
-const LOG_MAX = 60;
-export const audioLog: string[] = [];
-
-function debugOverlayOn(): boolean {
-  return typeof window !== 'undefined' && window.location.hash.includes('audio-debug');
-}
-
-function alog(message: string): void {
-  const stamp = typeof performance !== 'undefined' ? `${(performance.now() / 1000).toFixed(1)}s` : '';
-  audioLog.push(`${stamp} ${message}`);
-  if (audioLog.length > LOG_MAX) audioLog.shift();
-  if (debugOverlayOn()) console.info('[오디오]', message);
-}
-
 function context(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   try {
-    if (!sharedContext) {
-      sharedContext = new AudioContext();
-      alog(`컨텍스트 생성 (state=${sharedContext.state}, rate=${sharedContext.sampleRate})`);
-      sharedContext.addEventListener('statechange', () => {
-        alog(`컨텍스트 상태 변화 → ${sharedContext?.state}`);
-      });
-    }
-  } catch (error) {
-    alog(`컨텍스트 생성 실패: ${String(error)}`);
+    sharedContext ??= new AudioContext();
+  } catch {
     return null; // 만들 수 없으면 HTMLAudio 폴백만 쓴다
   }
   return sharedContext;
@@ -95,16 +62,13 @@ function blessElement(): void {
       .then(() => {
         el.pause();
         el.volume = 1;
-        alog('요소 축복 성공 — 폴백 재생 경로 확보');
       })
-      .catch((error: unknown) => {
+      .catch(() => {
         // 축복 실패 — 다음 제스처에서 다시 시도한다
-        alog(`요소 축복 실패: ${String(error)}`);
         blessedElement = null;
       });
     blessedElement = el;
-  } catch (error) {
-    alog(`요소 축복 예외: ${String(error)}`);
+  } catch {
     blessedElement = null;
   }
 }
@@ -117,10 +81,8 @@ function playSilentKick(ctx: AudioContext): void {
     node.buffer = buffer;
     node.connect(ctx.destination);
     node.start();
-    alog('무음 킥 재생 (해제 고정)');
-  } catch (error) {
+  } catch {
     // 실패해도 resume 은 이미 시도했다
-    alog(`무음 킥 실패: ${String(error)}`);
   }
 }
 
@@ -135,15 +97,10 @@ export function primeAudio(): void {
   const ctx = context();
   if (!ctx) return;
   if (ctx.state !== 'running') {
-    const before = ctx.state;
-    alog(`제스처 프라임 — resume 시도 (${before})`);
     void ctx
       .resume()
-      .then(() => {
-        alog(`제스처 resume 결과: ${before} → ${ctx.state}`);
-        playSilentKick(ctx);
-      })
-      .catch((error: unknown) => alog(`제스처 resume 실패: ${String(error)}`));
+      .then(() => playSilentKick(ctx))
+      .catch(() => {});
   }
 }
 
@@ -154,22 +111,14 @@ export function primeAudio(): void {
 export function recoverAudio(): void {
   const ctx = sharedContext;
   if (ctx && ctx.state !== 'running') {
-    const before = ctx.state;
-    alog(`프로그램적 회복 시도 (${before})`);
-    void ctx
-      .resume()
-      .then(() => alog(`회복 결과: ${before} → ${ctx.state}`))
-      .catch((error: unknown) => alog(`회복 실패: ${String(error)}`));
+    void ctx.resume().catch(() => {});
   }
 }
 
 // iOS 는 백그라운드에 다녀오면 컨텍스트를 재운다 — 복귀 시 프로그램적 회복을 시도한다
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      alog('화면 복귀 — 컨텍스트 점검');
-      recoverAudio();
-    }
+    if (document.visibilityState === 'visible') recoverAudio();
   });
 }
 
@@ -199,8 +148,6 @@ async function tryResume(ctx: AudioContext): Promise<boolean> {
 function playViaElement(blob: Blob, settle: () => void): { stop: () => void } {
   const url = URL.createObjectURL(blob);
   const audio = blessedElement ?? new Audio();
-  audioDiag.path = blessedElement ? '요소(축복됨)' : '요소(새로 생성)';
-  alog(`${audioDiag.path} 재생 시도 (${Math.round(blob.size / 1024)}KB)`);
 
   const cleanup = () => {
     audio.onended = null;
@@ -211,14 +158,7 @@ function playViaElement(blob: Blob, settle: () => void): { stop: () => void } {
   audio.onended = cleanup;
   audio.onerror = cleanup;
   audio.src = url;
-  void audio
-    .play()
-    .then(() => alog('요소 재생 시작 ✓'))
-    .catch((error: unknown) => {
-      audioDiag.error = `요소 재생 거부: ${String(error)}`;
-      alog(audioDiag.error);
-      cleanup();
-    });
+  void audio.play().catch(cleanup);
 
   return {
     stop: () => {
@@ -251,7 +191,6 @@ export function playBlob(blob: Blob): AudioPlayback {
     const ctx = context();
     try {
       if (!ctx) throw new Error('no-audio-context');
-      alog(`재생 요청 (${Math.round(blob.size / 1024)}KB, ctx=${ctx.state})`);
       // 디코드를 먼저 한다 — 컨텍스트가 suspended 여도 디코드는 된다
       const buffer = await ctx.decodeAudioData(await blob.arrayBuffer());
       if (stopped || settled) return;
@@ -264,17 +203,11 @@ export function playBlob(blob: Blob): AudioPlayback {
       node.onended = () => {
         node.disconnect();
         settle();
-        alog('WebAudio 재생 종료');
       };
       source = node;
-      audioDiag.path = 'WebAudio';
-      audioDiag.error = '';
       node.start();
-      alog(`WebAudio 재생 시작 ✓ (${buffer.duration.toFixed(1)}초 분량)`);
-    } catch (error) {
+    } catch {
       // 컨텍스트가 못 깨어났거나(제스처 이력 없음·interrupted) 디코드 실패 — 요소로 마지막 시도
-      audioDiag.error = String(error);
-      alog(`WebAudio 경로 실패: ${String(error)} → 요소 폴백`);
       if (stopped || settled) return;
       fallback = playViaElement(blob, settle);
     }

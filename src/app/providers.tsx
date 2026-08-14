@@ -3,57 +3,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { getParentId, subscribeToSession } from '@/core/api/auth-token';
-// C-01 예외: 오디오 "프라이밍"과 진단 표시만 여기서 한다. 재생·녹음은 여전히 useAudioOwnership 뿐이다
-import { audioDiag, audioLog, primeAudio } from '@/core/audio/player';
-
-/**
- * 실기기 원격 진단 — 주소 뒤에 #audio-debug 를 붙이면 구석에 오디오 상태가 뜬다.
- * 아이패드에는 개발자 도구가 없어서, 안 될 때 스크린샷 한 장으로 상태를 받기 위한 창구다
- */
-function AudioDebugOverlay() {
-  const [snapshot, setSnapshot] = useState<{ head: string; lines: string[] } | null>(null);
-  useEffect(() => {
-    if (!window.location.hash.includes('audio-debug')) return;
-    const timer = setInterval(() => {
-      setSnapshot({
-        head:
-          `ctx=${audioDiag.contextState()} | path=${audioDiag.path}` +
-          (audioDiag.error ? ` | err=${audioDiag.error}` : ''),
-        // 스크린샷 한 장에 사건 순서가 담기게 최근 10줄을 보여준다
-        lines: audioLog.slice(-10),
-      });
-    }, 500);
-    return () => clearInterval(timer);
-  }, []);
-
-  if (!snapshot) return null;
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 4,
-        left: 4,
-        zIndex: 9999,
-        background: 'rgba(0,0,0,0.8)',
-        color: '#0f0',
-        font: '10px/1.5 monospace',
-        padding: '4px 8px',
-        borderRadius: 6,
-        maxWidth: '92vw',
-        pointerEvents: 'none',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-all',
-      }}
-    >
-      <div style={{ color: '#fff', borderBottom: '1px solid #444', marginBottom: 2 }}>
-        {snapshot.head}
-      </div>
-      {snapshot.lines.map((entry, i) => (
-        <div key={i}>{entry}</div>
-      ))}
-    </div>
-  );
-}
+// C-01 예외: 오디오 "프라이밍"만 여기서 한다. 재생·녹음은 여전히 useAudioOwnership 뿐이다
+import { primeAudio } from '@/core/audio/player';
 
 export function Providers({ children }: { children: ReactNode }) {
   // 클라이언트를 state 로 잡아 리렌더마다 새로 만들지 않는다
@@ -114,10 +65,5 @@ export function Providers({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-      <AudioDebugOverlay />
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

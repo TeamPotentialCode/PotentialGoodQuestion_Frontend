@@ -1,12 +1,6 @@
 // 마이크 녹음. 순수 TS — react/next 를 import 하지 않는다(C-01 레이어 규칙).
 // features/play/useAudioOwnership.ts 에서만 사용한다.
-import { audioLog, sharedAudioContext } from '@/core/audio/player';
-
-function alog(message: string): void {
-  const stamp = typeof performance !== 'undefined' ? `${(performance.now() / 1000).toFixed(1)}s` : '';
-  audioLog.push(`${stamp} ${message}`);
-  if (audioLog.length > 60) audioLog.shift();
-}
+import { sharedAudioContext } from '@/core/audio/player';
 
 export interface Recording {
   /** 녹음을 멈추고 오디오 Blob 을 돌려준다. 마이크도 함께 해제한다 */
@@ -31,7 +25,6 @@ export async function startRecording(): Promise<Recording> {
     if (event.data.size > 0) chunks.push(event.data);
   };
   recorder.start();
-  alog(`녹음 시작 (${recorder.mimeType || '기본 포맷'}, ctx=${sharedAudioContext()?.state ?? '없음'})`);
 
   /*
    * 입력 크기 측정용. 녹음 자체와는 무관하고, 실패해도 녹음은 그대로 진행한다.
@@ -78,10 +71,7 @@ export async function startRecording(): Promise<Recording> {
           } catch {
             // 이미 끊겨 있어도 무해하다
           }
-          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-          // iOS 진단의 핵심 지점: 마이크가 끝난 직후 재생 컨텍스트가 살아 있는가
-          alog(`녹음 종료 (${Math.round(blob.size / 1024)}KB, ctx=${sharedAudioContext()?.state ?? '없음'})`);
-          resolve(blob);
+          resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }));
         };
         recorder.stop();
       }),
