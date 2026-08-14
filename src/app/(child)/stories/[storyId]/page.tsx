@@ -179,7 +179,7 @@ export default function StoryDetailPage() {
           ) : inProgress ? (
             <Link href={`/play/${inProgress.sessionId}`} className="w-full max-w-md">
               <TouchTarget size="lg" className="w-full">
-                이어하기 →
+                이어서 하기 →
               </TouchTarget>
             </Link>
           ) : (

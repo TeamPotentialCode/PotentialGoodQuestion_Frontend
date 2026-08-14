@@ -36,7 +36,8 @@ export default function PostOrderPage() {
   // 아이가 아직 안 옮겼으면 서버가 섞어준 순서가 그대로 화면 순서다.
   // 이펙트로 state 를 채우면 렌더가 한 번 더 도므로 파생값으로 둔다
   const [moved, setMoved] = useState<string[] | null>(null);
-  const [wrong, setWrong] = useState(false);
+  // 시안: 확인 결과를 화면에 보여주고 아이가 스스로 다음으로 넘어간다
+  const [result, setResult] = useState<'none' | 'wrong' | 'correct'>('none');
 
   const activity = useQuery({
     queryKey: ['activity', sessionId],
@@ -49,17 +50,18 @@ export default function PostOrderPage() {
 
   const submit = useMutation({
     mutationFn: () => submitActivity(sessionId, { submittedOrder: order }),
-    onSuccess: (result) => {
-      if (!result.orderCorrect) {
-        setWrong(true);
+    onSuccess: (submitted) => {
+      if (!submitted.orderCorrect) {
+        setResult('wrong');
         return;
       }
       // 핵심 단어는 이 응답으로만 온다 — 다시 말하기 화면이 새로고침돼도 남게 저장한다
       saveHandoff(sessionId, {
         submittedOrder: order,
-        retellingKeywords: result.retellingKeywords,
+        retellingKeywords: submitted.retellingKeywords,
       });
-      router.replace(`/sessions/${sessionId}/post/retelling`);
+      // 시안: 바로 넘기지 않고 "잘했어!" 를 보여준 뒤 아이가 "다음으로"를 누른다
+      setResult('correct');
     },
   });
 
@@ -72,7 +74,7 @@ export default function PostOrderPage() {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    setWrong(false);
+    setResult('none');
     setMoved(arrayMove(order, order.indexOf(String(active.id)), order.indexOf(String(over.id))));
   }
 
@@ -116,27 +118,51 @@ export default function PostOrderPage() {
             <CardRow>
               {order.map((id, index) => {
                 const card = cards.find((c) => c.id === id);
-                return card ? <OrderCard key={id} card={card} slot={index + 1} /> : null;
+                return card ? (
+                  <OrderCard key={id} card={card} slot={index + 1} solved={result === 'correct'} />
+                ) : null;
               })}
             </CardRow>
           </SortableContext>
         </DndContext>
 
         <Stack gap="sm" align="center">
-          <TouchTarget
-            size="lg"
-            onClick={() => submit.mutate()}
-            disabled={submit.isPending || order.length === 0}
-          >
-            순서 확인하기
-          </TouchTarget>
-
-          {/* 시안의 피드백 자리 — 오답이어도 화면에 머물고 다시 해볼 수 있다 */}
-          {wrong && (
-            <p role="alert" className="text-body text-ink">
-              아직 순서가 달라요. 다시 놓아 볼까?
-            </p>
+          {/* 시안: 결과 문구가 버튼 위에 오고, 오답이면 힌트가 한 줄 더 붙는다 */}
+          {result === 'correct' && (
+            <p className="text-body font-semibold text-ink">잘했어! 순서를 모두 맞췄어.</p>
           )}
+          {result === 'wrong' && (
+            <>
+              <p role="alert" className="text-body text-ink">
+                조금만 다시 생각해 볼까?
+              </p>
+              <p className="flex items-center gap-2 rounded-card bg-surface-raised px-4 py-2 text-caption text-ink-soft">
+                <span aria-hidden>💡</span>
+                <span>
+                  <span className="font-semibold text-ink">힌트</span> 가장 처음 있었던 일을 먼저
+                  찾아볼까?
+                </span>
+              </p>
+            </>
+          )}
+
+          {result === 'correct' ? (
+            <TouchTarget
+              size="lg"
+              onClick={() => router.replace(`/sessions/${sessionId}/post/retelling`)}
+            >
+              다음으로
+            </TouchTarget>
+          ) : (
+            <TouchTarget
+              size="lg"
+              onClick={() => submit.mutate()}
+              disabled={submit.isPending || order.length === 0}
+            >
+              {result === 'wrong' ? '다시 확인하기' : '순서 확인하기'}
+            </TouchTarget>
+          )}
+
           {submit.isError && (
             <p role="alert" className="text-body text-ink">
               잠깐 문제가 생겼어요. 다시 눌러 볼까요?

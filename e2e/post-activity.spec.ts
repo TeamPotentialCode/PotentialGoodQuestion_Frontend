@@ -83,10 +83,12 @@ test('틀린 순서로 제출하면 안내가 뜨고 화면에 머문다', async
   // 섞인 그대로 제출 = 오답
   await page.getByRole('button', { name: '순서 확인하기' }).click();
   // getByRole('alert') 는 Next 의 라우트 안내 요소와도 겹친다
-  await expect(page.getByText('아직 순서가 달라요. 다시 놓아 볼까?')).toBeVisible();
+  await expect(page.getByText('조금만 다시 생각해 볼까?')).toBeVisible();
+  await expect(page.getByText('가장 처음 있었던 일을 먼저 찾아볼까?')).toBeVisible();
   expect(page.url()).toContain(`/sessions/${sessionId}/post/order`);
   // 카드는 그대로 남아 다시 해볼 수 있다
   await expect(page.locator('[data-card-id]')).toHaveCount(5);
+  await expect(page.getByRole('button', { name: '다시 확인하기' })).toBeVisible();
 });
 
 test('키보드로 카드를 옮기면 자리가 바뀐다', async ({ page }) => {
@@ -119,6 +121,9 @@ test('정답 순서로 맞추면 다시 말하기로 넘어가고 핵심 단어�
   ]);
 
   await page.getByRole('button', { name: '순서 확인하기' }).click();
+  // 시안: 바로 넘어가지 않고 칭찬을 보여준 뒤 아이가 "다음으로"를 누른다
+  await expect(page.getByText('잘했어! 순서를 모두 맞췄어.')).toBeVisible();
+  await page.getByRole('button', { name: '다음으로' }).click();
   await page.waitForURL(/\/post\/retelling$/, { timeout: 15000 });
 
   // 핵심 단어는 정답 응답으로만 오므로 새로고침에 대비해 저장해 둔다
@@ -140,6 +145,7 @@ async function reachRetelling(page: Page): Promise<number> {
   await moveRight(page, 'card_3');
   await moveRight(page, 'card_5');
   await page.getByRole('button', { name: '순서 확인하기' }).click();
+  await page.getByRole('button', { name: '다음으로' }).click();
   await page.waitForURL(/\/post\/retelling$/, { timeout: 15000 });
   return sessionId;
 }
@@ -180,7 +186,10 @@ test('다시 말하기: 말하고 보내면 완료 화면으로 간다', async (
   await page.waitForTimeout(400);
 
   await page.getByRole('button', { name: '보내기' }).click();
-  await expect(page.getByText('내가 이렇게 말했어요')).toBeVisible({ timeout: 20000 });
+  // 결과 칸은 처음부터 있으므로 STT 가 끝났는지는 step 으로 본다
+  await expect(page.getByTestId('post-retelling')).toHaveAttribute('data-step', 'reviewing', {
+    timeout: 20000,
+  });
 
   await page.getByRole('button', { name: '보내기' }).click();
   await page.waitForURL(new RegExp(`/sessions/${sessionId}/complete$`), { timeout: 20000 });

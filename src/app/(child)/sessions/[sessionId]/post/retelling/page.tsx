@@ -206,7 +206,7 @@ export default function PostRetellingPage() {
             </Stack>
           }
           right={
-            <Stack gap="md" align="center">
+            <Stack gap="md" align="center" className="w-full">
               {step === 'idle' && (
                 <>
                   <p className="text-caption text-ink-soft">준비되면 마이크를 눌러 이야기해 줘.</p>
@@ -217,50 +217,65 @@ export default function PostRetellingPage() {
                 </>
               )}
 
+              {/* 문구는 대화 화면(TALK v3)과 같은 것을 쓴다 — 두 화면이 어긋나면 아이가 헷갈린다 */}
               {step === 'recording' && (
-                <>
-                  <p className="text-body text-ink-soft" aria-live="polite">
-                    듣고 있어요…
-                  </p>
-                  <MicLevel level={micLevel} />
-                  <TouchTarget size="lg" onClick={stopAndTranscribe}>
-                    보내기
-                  </TouchTarget>
-                </>
-              )}
-
-              {step === 'transcribing' && (
-                <p className="text-body text-ink-soft" aria-live="polite">
-                  네 말을 듣고 있어요…
-                </p>
-              )}
-
-              {(step === 'reviewing' || step === 'submitting') && (
-                <Stack gap="sm" className="w-full">
-                  <p className="text-caption text-ink-soft">내가 이렇게 말했어요</p>
-                  <p className="min-h-40 w-full rounded-card bg-surface-raised px-5 py-4 text-body text-ink">
-                    {said}
-                  </p>
-                  <Stack direction="row" gap="md" justify="center">
-                    <TouchTarget
-                      size="lg"
-                      look="outline"
-                      onClick={startTalking}
-                      disabled={submit.isPending}
-                    >
-                      다시 말하기
-                    </TouchTarget>
-                    <TouchTarget
-                      size="lg"
-                      onClick={() => {
-                        setStep('submitting');
-                        submit.mutate();
-                      }}
-                      disabled={submit.isPending}
-                    >
+                <div className="w-full rounded-card bg-surface-raised px-5 py-5 text-center">
+                  <Stack gap="sm" align="center">
+                    <p className="text-title font-semibold text-ink" aria-live="polite">
+                      듣고 있어요!
+                    </p>
+                    <p className="text-caption text-ink-soft">편하게 이야기해 줘.</p>
+                    <MicLevel level={micLevel} />
+                    <TouchTarget size="lg" onClick={stopAndTranscribe}>
                       보내기
                     </TouchTarget>
                   </Stack>
+                </div>
+              )}
+
+              {step === 'transcribing' && (
+                <div className="w-full rounded-card bg-surface-raised px-5 py-5 text-center">
+                  <Stack gap="sm" align="center">
+                    <p className="text-title font-semibold text-ink" aria-live="polite">
+                      내가 한 말을 글자로 바꾸고 있어요
+                    </p>
+                    <p className="text-caption text-ink-soft">조금만 기다려 줘!</p>
+                  </Stack>
+                </div>
+              )}
+
+              {/* 시안: 결과 칸은 처음부터 자리를 잡고 있고, 말하기 전에는 안내 문구가 들어 있다 */}
+              <Stack gap="sm" className="w-full">
+                <p className="text-caption text-ink-soft">내가 이렇게 말했어요</p>
+                <p className="min-h-40 w-full rounded-card bg-surface-raised px-5 py-4 text-body">
+                  {said ? (
+                    <span className="text-ink">{said}</span>
+                  ) : (
+                    <span className="text-ink-soft">내가 말한 이야기가 여기에 보여요.</span>
+                  )}
+                </p>
+              </Stack>
+
+              {(step === 'reviewing' || step === 'submitting') && (
+                <Stack direction="row" gap="md" justify="center">
+                  <TouchTarget
+                    size="lg"
+                    look="outline"
+                    onClick={startTalking}
+                    disabled={submit.isPending}
+                  >
+                    다시 말하기
+                  </TouchTarget>
+                  <TouchTarget
+                    size="lg"
+                    onClick={() => {
+                      setStep('submitting');
+                      submit.mutate();
+                    }}
+                    disabled={submit.isPending}
+                  >
+                    보내기
+                  </TouchTarget>
                 </Stack>
               )}
 

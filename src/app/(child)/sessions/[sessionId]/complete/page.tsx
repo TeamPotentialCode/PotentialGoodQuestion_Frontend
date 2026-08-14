@@ -48,7 +48,13 @@ export default function SessionCompletePage() {
           className="w-full rounded-card border border-line bg-surface px-5 py-4"
         >
           <span className="flex items-center gap-3 text-body font-semibold text-ink">
-            <Icon name="check" className="size-7" />
+            {/* 시안: 진한 원 안에 흰 체크 */}
+            <span
+              aria-hidden
+              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink text-cta-ink"
+            >
+              <Icon name="check" className="size-4" />
+            </span>
             {storyTitle}
           </span>
           <span className="text-caption text-ink-soft">이야기 완료</span>

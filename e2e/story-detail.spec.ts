@@ -78,12 +78,12 @@ test('이미 진행 중이면 시작하기 대신 이어하기를 보여준다',
   await page.getByRole('link', { name: /방귀 뀌는 며느리/ }).last().click();
   await page.waitForURL('**/stories/1');
 
-  await expect(page.getByRole('link', { name: '이어하기 →' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '이어서 하기 →' })).toBeVisible();
   await expect(page.getByRole('button', { name: '이야기 시작하기 →' })).toBeHidden();
   // 진행 중에는 세션 재시작 API 가 없어 "다시 만들어 보기" 를 열어두면 안 된다
   await expect(page.getByRole('button', { name: '다시 만들어 보기' })).toBeDisabled();
 
-  await page.getByRole('link', { name: '이어하기 →' }).click();
+  await page.getByRole('link', { name: '이어서 하기 →' }).click();
   await page.waitForURL(/\/play\/\d+$/);
   expect(page.url()).toBe(firstSession); // 새 세션을 만들지 않았다
 });
