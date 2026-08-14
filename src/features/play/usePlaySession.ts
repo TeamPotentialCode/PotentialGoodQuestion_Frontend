@@ -201,6 +201,7 @@ export function usePlaySession(sessionId: number) {
                 sceneCompleted: data.sceneCompleted,
                 nextSceneId: data.nextSceneId,
                 showMission: data.showMission,
+                missionType: data.missionType,
               },
             });
           } catch {

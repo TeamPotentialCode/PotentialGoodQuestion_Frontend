@@ -239,6 +239,9 @@ test('showMission: 씬7은 2턴 경과·SOLUTION 조건, 씬9는 EMOTION/PERSPEC
   expect(s9a.body.data.showMission).toBe(false);
   const s9b = await utter(page, accessToken, sessionId, '나도 정말 기뻐!');
   expect(s9b.body.data.showMission).toBe(true);
+  // 어떤 미션인지도 함께 온다 — 화면이 붙을 때 이 값으로 분기한다
+  expect(s9b.body.data.missionType).toBe('MISSION_2');
+  expect(s9a.body.data.missionType).toBeNull();
 });
 
 test('사후 활동: 카드는 섞여 오고, 정답일 때만 핵심 단어가 온다', async ({ page }) => {

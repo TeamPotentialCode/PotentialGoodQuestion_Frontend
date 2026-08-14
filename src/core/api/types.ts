@@ -26,6 +26,8 @@ export type ThinkingElement =
   | 'EMPATHY';
 
 export type UtteranceValidity = 'VALID' | 'OFF_TOPIC' | 'SHORT' | 'UNCLEAR';
+/** MISSION_1: 높은 배 따기(장면3) / MISSION_2: 단점을 장점으로(장면4) */
+export type MissionType = 'MISSION_1' | 'MISSION_2';
 export type ProgressMode = 'NORMAL' | 'GUIDED' | 'CLOSING';
 export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED';
 
@@ -203,7 +205,10 @@ export interface UtteranceData {
   };
   sceneCompleted: boolean;
   nextSceneId: number | null;
+  /** 미션 화면을 지금 띄워야 하는지 (백엔드가 조건·강제 노출까지 판단한다) */
   showMission: boolean;
+  /** 어떤 미션인지. showMission 이 false 면 null */
+  missionType: MissionType | null;
 }
 
 // ---------- 음성 (확정) ----------

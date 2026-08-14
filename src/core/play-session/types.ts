@@ -1,3 +1,5 @@
+import type { MissionType } from '@/core/api/types';
+
 // 플레이 세션 상태 모델
 // variant에 부가 데이터를 추가하지 않는다. 전이에 필요한 값은 PlayState에 둔다.
 export type Phase =
@@ -38,6 +40,7 @@ export interface UtteranceOutcome {
   sceneCompleted: boolean;
   nextSceneId: number | null;
   showMission?: boolean;
+  missionType?: MissionType | null;
 }
 
 export type PlayEvent =

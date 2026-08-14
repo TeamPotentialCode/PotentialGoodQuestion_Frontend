@@ -314,6 +314,12 @@ export function submitUtterance(
     sceneCompleted,
     nextSceneId: sceneCompleted ? nextSceneId : null,
     showMission,
+    // 백엔드 resolveMissionType 미러링: 필수 요소에 EMOTION·PERSPECTIVE 가 있으면 MISSION_2
+    missionType: showMission
+      ? scene.requiredElements.some((e) => e === 'EMOTION' || e === 'PERSPECTIVE')
+        ? 'MISSION_2'
+        : 'MISSION_1'
+      : null,
   };
   if (idempotencyKey) idempotencyCache.set(idempotencyKey, result);
   persist(); // 턴 진행 상황도 새로고침을 견뎌야 한다
