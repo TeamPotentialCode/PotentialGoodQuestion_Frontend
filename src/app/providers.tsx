@@ -56,8 +56,13 @@ export function Providers({ children }: { children: ReactNode }) {
    * 컨텍스트를 다시 재우는 경우도 다음 탭이 되살린다 — 그래서 once 가 아니다
    */
   useEffect(() => {
+    // 키보드로만 조작하는 사용자도 있다 — 둘 다 제스처다
     document.addEventListener('pointerdown', primeAudio, { capture: true });
-    return () => document.removeEventListener('pointerdown', primeAudio, { capture: true });
+    document.addEventListener('keydown', primeAudio, { capture: true });
+    return () => {
+      document.removeEventListener('pointerdown', primeAudio, { capture: true });
+      document.removeEventListener('keydown', primeAudio, { capture: true });
+    };
   }, []);
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;

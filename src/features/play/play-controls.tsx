@@ -19,12 +19,7 @@ export function PlayControls({ phase, onAction }: PlayControlsProps) {
     <Stack direction="row" gap="md" align="center" justify="center">
       {actions.map((type) => {
         switch (type) {
-          case 'TAP_UNLOCK':
-            return (
-              <TouchTarget key={type} size="lg" onClick={() => onAction({ type })}>
-                이야기 시작하기
-              </TouchTarget>
-            );
+          // TAP_UNLOCK(locked)은 화면 없이 자동 해제·리다이렉트로 처리된다 — 그릴 버튼이 없다
           case 'TAP_SPEAK':
             return (
               <TouchTarget

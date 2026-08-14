@@ -28,15 +28,26 @@ function context(): AudioContext | null {
   return sharedContext;
 }
 
+// 이 문서에서 제스처를 한 번이라도 봤는지. userActivation API 가 없는 브라우저의 폴백 —
+// 이것 없이 리다이렉트로 분기하면 상세 ↔ 플레이 무한 왕복이 된다
+let gestureSeen = false;
+
 /**
  * 사용자 제스처 안에서 호출해 오디오 재생 권한을 깨워 둔다.
  * iOS 는 백그라운드에 다녀오면 컨텍스트를 다시 suspend 하므로 여러 번 불려도 된다(멱등).
  */
 export function primeAudio(): void {
+  gestureSeen = true;
   const ctx = context();
   if (ctx && ctx.state === 'suspended') {
     void ctx.resume().catch(() => {});
   }
+}
+
+/** 이 문서에 사용자 제스처 이력이 있는지 — 자동재생을 시도해도 되는지의 근거 */
+export function hasUserGesture(): boolean {
+  if (typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive) return true;
+  return gestureSeen;
 }
 
 /** resume 이 제스처 없이는 영영 안 끝날 수 있다 — 잠깐만 기다려 보고 포기한다 */

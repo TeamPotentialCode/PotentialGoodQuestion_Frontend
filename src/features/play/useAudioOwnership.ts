@@ -4,6 +4,9 @@ import { useCallback, useMemo, useRef } from 'react';
 import { playBlob, type AudioPlayback } from '@/core/audio/player';
 import { startRecording, type Recording } from '@/core/audio/recorder';
 
+// 자동재생을 시도해도 되는지의 판단 근거. 재생 제어가 아니라 조회라 여기서 재수출한다
+export { hasUserGesture } from '@/core/audio/player';
+
 /**
  * 오디오 하드웨어를 다루는 유일한 지점(ESLint C-01: @/core/audio 는 이 파일에서만 import).
  *

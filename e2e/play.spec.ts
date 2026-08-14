@@ -241,18 +241,22 @@ test('녹음 중에는 마이크 입력 크기가 보인다', async ({ page }) =
   await expect(page.getByTestId('mic-level')).toBeVisible();
 });
 
-test('클릭 이력이 없으면 잠금 화면이 폴백으로 남는다', async ({ page }) => {
-  // 새로고침·주소 직접 입력을 흉내낸다 — sticky activation 이 없다고 브라우저가 답하게 한다
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'userActivation', {
-      value: { hasBeenActive: false, isActive: false },
-    });
-  });
+test('새로고침으로 바로 들어오면 상세로 돌려보내고, 이어서 하기로 돌아온다', async ({ page }) => {
   await enterPlay(page);
+  await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
+  const playUrl = page.url();
 
-  await expect(stage(page)).toHaveAttribute('data-state', 'locked');
-  await expect(page.getByText('이야기를 만날 준비 됐어?')).toBeVisible();
-  // 버튼을 누르면(=제스처) 평소처럼 내레이션이 시작된다
-  await page.getByRole('button', { name: '이야기 시작하기' }).click();
+  // 새 문서 = 제스처 이력 0. 목 세션은 저장소에 남아 새로고침을 견딘다
+  await page.reload();
+
+  // 잠금 화면을 보여주는 대신 이야기 상세로 돌려보낸다
+  await page.waitForURL('**/stories/1', { timeout: 20000 });
+  const resume = page.getByRole('link', { name: '이어서 하기 →' });
+  await expect(resume).toBeVisible();
+
+  // "이어서 하기" 탭이 제스처가 되어 이번엔 바로 내레이션이 시작된다
+  await resume.click();
+  await page.waitForURL(/\/play\/\d+$/);
+  expect(page.url()).toBe(playUrl); // 같은 세션으로 돌아온다
   await expect(stage(page)).toHaveAttribute('data-state', 'narrating', { timeout: 20000 });
 });

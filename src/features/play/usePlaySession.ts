@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Phase } from '@/core/play-session/types';
 import { submitUtterance, synthesize, transcribe } from '@/features/play/api';
 import { loadScene, type NarrationPage } from '@/features/play/scene-source';
-import { useAudioOwnership } from '@/features/play/useAudioOwnership';
+import { hasUserGesture, useAudioOwnership } from '@/features/play/useAudioOwnership';
 import { useMicLevel } from '@/features/play/use-mic-level';
 import { usePlayStore } from '@/features/play/usePlayStore';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
@@ -100,17 +100,16 @@ export function usePlaySession(sessionId: number) {
   }, [childName]);
 
   /*
-   * 잠금 화면은 자동재생 정책용 "첫 클릭 보장" 장치일 뿐이다.
-   * 상세 화면의 "이야기 시작하기 →" 클릭으로 들어왔다면 이 문서에 이미 제스처가 있으므로
-   * 화면을 건너뛴다. 새로고침·주소 직접 입력(제스처 없음)이나
-   * userActivation 미지원 브라우저에서만 잠금 화면이 폴백으로 남는다
+   * locked 는 자동재생 정책용 "첫 제스처 보장" 상태일 뿐 화면이 아니다.
+   * 클릭·키로 들어왔으면(문서에 제스처 이력 있음) 곧장 해제한다.
+   * 제스처가 없는 경우(새로고침·주소 직접 입력)는 화면 쪽이 상세로 돌려보낸다 —
+   * 거기서 "이어서 하기"를 누르는 탭이 제스처가 된다
    */
   useEffect(() => {
     if (state.phase.tag !== 'locked') return;
-    // 세션 응답이 와야 어느 장면부터인지 안다 — 사람 손가락은 버튼이 그려진 뒤(=로드 후)에나
-    // 누를 수 있었지만, 자동 해제는 마운트 직후라 여기서 직접 기다린다
+    // 세션 응답이 와야 어느 장면부터인지 안다 — 응답 전에 풀면 fatal 로 떨어진다
     if (!session.data) return;
-    if (navigator.userActivation?.hasBeenActive) dispatch({ type: 'TAP_UNLOCK' });
+    if (hasUserGesture()) dispatch({ type: 'TAP_UNLOCK' });
   }, [state.phase, session.data, dispatch]);
 
   /*

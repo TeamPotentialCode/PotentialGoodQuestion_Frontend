@@ -7,8 +7,8 @@ import { useRequireAuth } from '@/features/auth/use-session';
 import { PlayHeader } from '@/features/play/play-header';
 import { PlayNarration } from '@/features/play/play-narration';
 import { PlayStage } from '@/features/play/play-stage';
+import { hasUserGesture } from '@/features/play/useAudioOwnership';
 import { usePlaySession } from '@/features/play/usePlaySession';
-import { storyThumbnail } from '@/features/story/images';
 import { Screen, Stack, TouchTarget } from '@/shared/ui';
 
 export default function PlayPage() {
@@ -26,7 +26,20 @@ export default function PlayPage() {
     if (finished) router.replace(`/sessions/${sessionId}/post/order`);
   }, [finished, router, sessionId]);
 
-  if (!authenticated || session.isPending) {
+  /*
+   * 새로고침·주소 직접 입력으로 들어오면 이 문서에 제스처가 없어 소리를 못 튼다.
+   * 별도 잠금 화면을 두는 대신 이야기 상세로 돌려보낸다 —
+   * 거기서 "이어서 하기"를 누르는 탭이 제스처가 되어 소리까지 살아난다.
+   * (제스처가 있으면 usePlaySession 이 잠금을 곧장 풀어 이 조건에 안 걸린다)
+   */
+  const needsGesture = state.phase.tag === 'locked' && session.data !== undefined && !hasUserGesture();
+  const storyId = session.data?.storyId;
+  useEffect(() => {
+    if (needsGesture && storyId !== undefined) router.replace(`/stories/${storyId}`);
+  }, [needsGesture, storyId, router]);
+
+  // locked 는 화면이 아니다 — 자동 해제 또는 상세 리다이렉트가 끝날 때까지 로딩만 보여준다
+  if (!authenticated || session.isPending || state.phase.tag === 'locked') {
     return (
       <Screen className="items-center justify-center">
         <p className="text-body text-ink-soft">불러오는 중…</p>
@@ -80,7 +93,6 @@ export default function PlayPage() {
         ) : (
           <PlayStage
             phase={state.phase}
-            storyThumbnail={storyThumbnail(session.data.storyId)}
             characterName={scene?.characterName ?? ''}
             sceneDescription={scene?.sceneDescription ?? ''}
             dialogueIndex={scene?.dialogueIndex ?? null}
