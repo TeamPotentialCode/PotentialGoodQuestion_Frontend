@@ -9,10 +9,15 @@ interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   hint?: string;
+  /**
+   * 이 칸에 붙일 문구는 없지만 잘못된 상태로 보여야 할 때.
+   * 로그인 실패처럼 어느 칸이 틀렸는지 서버가 알려주지 않는 경우에 쓴다
+   */
+  invalid?: boolean;
 }
 
 // 라벨·입력·오류를 한 묶음으로 다루는 폼 필드
-export function Field({ label, error, hint, className, id, type, ...rest }: FieldProps) {
+export function Field({ label, error, hint, invalid, className, id, type, ...rest }: FieldProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const errorId = `${inputId}-error`;
@@ -21,6 +26,7 @@ export function Field({ label, error, hint, className, id, type, ...rest }: Fiel
   // 비밀번호는 눈 아이콘으로 잠깐 보여줄 수 있다(시안). 오타로 로그인이 막히는 걸 줄인다
   const isPassword = type === 'password';
   const [revealed, setRevealed] = useState(false);
+  const wrong = Boolean(error) || Boolean(invalid);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -31,13 +37,13 @@ export function Field({ label, error, hint, className, id, type, ...rest }: Fiel
         <input
           id={inputId}
           type={isPassword && revealed ? 'text' : type}
-          aria-invalid={error ? true : undefined}
+          aria-invalid={wrong ? true : undefined}
           aria-describedby={error ? errorId : hint ? hintId : undefined}
           className={cn(
             'min-h-touch w-full rounded-card border-2 bg-surface px-4 text-body text-ink',
             'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
             isPassword && 'pr-touch',
-            error ? 'border-ink' : 'border-line',
+            wrong ? 'border-danger' : 'border-line',
             className,
           )}
           {...rest}
@@ -58,7 +64,7 @@ export function Field({ label, error, hint, className, id, type, ...rest }: Fiel
         )}
       </div>
       {error ? (
-        <p id={errorId} role="alert" className="text-caption font-medium text-ink">
+        <p id={errorId} role="alert" className="text-caption font-medium text-danger">
           {error}
         </p>
       ) : hint ? (

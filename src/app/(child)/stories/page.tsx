@@ -5,10 +5,12 @@ import { useState } from 'react';
 import { useRequireAuth } from '@/features/auth/use-session';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getStories } from '@/features/story/api';
-import { StoryCard } from '@/features/story/story-card';
-import { CardRow, cn, Screen, Stack, TabBar } from '@/shared/ui';
+import { StoryCard, StoryPlaceholderCard } from '@/features/story/story-card';
+import { CardRow, cn, Icon, Screen, Stack, TabBar } from '@/shared/ui';
 
 const ALL = '전체';
+/** 시안은 목록을 늘 3장으로 채워 둔다 — 모자란 자리는 "준비 중"이 메운다 */
+const STORY_SLOTS = 3;
 
 export default function StoriesPage() {
   const authenticated = useRequireAuth();
@@ -84,11 +86,25 @@ export default function StoriesPage() {
         )}
         {stories.data &&
           (stories.data.length === 0 ? (
-            <p className="text-body text-ink-soft">아직 준비된 이야기가 없어요.</p>
+            // 고른 주제에 이야기가 없을 때. "준비 중" 자리로 메우지 않는다 —
+            // 자리만 채우면 아이가 필터가 걸린 줄 모른다
+            <Stack gap="sm" align="center" className="py-16">
+              <span
+                aria-hidden
+                className="flex size-14 items-center justify-center rounded-full bg-surface-raised text-ink-soft"
+              >
+                <Icon name="book" className="size-7" />
+              </span>
+              <p className="text-body font-semibold text-ink">이 주제의 이야기는 아직 없어요.</p>
+              <p className="text-caption text-ink-soft">다른 주제를 골라 볼까?</p>
+            </Stack>
           ) : (
             <CardRow variant="grid">
               {stories.data.map((story) => (
                 <StoryCard key={story.storyId} story={story} />
+              ))}
+              {Array.from({ length: Math.max(0, STORY_SLOTS - stories.data.length) }).map((_, i) => (
+                <StoryPlaceholderCard key={`slot-${i}`} />
               ))}
             </CardRow>
           ))}

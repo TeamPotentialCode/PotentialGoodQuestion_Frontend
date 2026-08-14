@@ -5,7 +5,7 @@ import { ApiError } from '@/core/api/client';
 // 검증 실패가 500 "서버 오류가 발생했습니다."로 오기 때문에 그대로 보여주면 오해를 준다
 export function loginErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.status === 401) return '이메일 또는 비밀번호를 확인해 주세요.';
+    if (error.status === 401) return '이메일 또는 비밀번호를 다시 확인해 주세요.';
     if (error.status >= 500) return '잠시 후 다시 시도해 주세요.';
     return error.message;
   }

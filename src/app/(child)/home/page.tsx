@@ -7,9 +7,12 @@ import { AppHeader } from '@/features/child-profile/app-header';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getHome } from '@/features/home/api';
 import { ContinueCard } from '@/features/home/continue-card';
+import { HomeStoryCard, HomeStoryPlaceholderCard } from '@/features/home/home-story-card';
 import { loadStoryScenes } from '@/features/play/scene-source';
-import { StoryCard } from '@/features/story/story-card';
 import { CardRow, Screen, Stack, TabBar, TouchTarget } from '@/shared/ui';
+
+/** 시안은 추천을 늘 3장으로 채워 둔다 — 모자란 자리는 "준비 중"이 메운다 */
+const RECOMMENDED_SLOTS = 3;
 
 export default function HomePage() {
   const authenticated = useRequireAuth();
@@ -102,7 +105,12 @@ export default function HomePage() {
               {home.data && (
                 <CardRow variant="grid">
                   {home.data.recommendedStories.map((story) => (
-                    <StoryCard key={story.storyId} story={story} />
+                    <HomeStoryCard key={story.storyId} story={story} />
+                  ))}
+                  {Array.from({
+                    length: Math.max(0, RECOMMENDED_SLOTS - home.data.recommendedStories.length),
+                  }).map((_, i) => (
+                    <HomeStoryPlaceholderCard key={`slot-${i}`} />
                   ))}
                 </CardRow>
               )}

@@ -48,17 +48,18 @@ test('탭은 4개이고 화면 없는 둘은 비활성이며 현재 위치를 �
   );
 });
 
-test('카드에 제목·시간·난이도·주제가 보이고 가짜 카드는 없다', async ({ page }) => {
+test('카드에 제목·시간·난이도·주제가 보이고 빈 자리는 "준비 중"이 메운다', async ({ page }) => {
   await login(page);
   await page.goto('/stories');
 
   const cards = page.getByRole('link', { name: /방귀 뀌는 며느리/ });
   await expect(cards).toHaveCount(1);
-  await expect(page.getByText('시간: 15분')).toBeVisible();
-  await expect(page.getByText(/난이도: 보통/)).toBeVisible();
-  // 시안의 "준비 중" 카드는 실제 데이터가 아니라서 넣지 않았다
-  await expect(page.getByText('준비 중')).toHaveCount(0);
-  await expect(page.getByText('새로운 이야기')).toHaveCount(0);
+  // 자리표시 카드에도 "시간: 15분" 이 있으므로 진짜 카드 안에서 본다
+  await expect(cards.getByText('시간: 15분')).toBeVisible();
+  await expect(cards.getByText(/난이도: 보통/)).toBeVisible();
+  // 시안 v4 는 목록을 3장으로 채워 둔다. 자리표시 카드는 누를 수 없어야 한다
+  await expect(page.getByText('새로운 이야기')).toHaveCount(2);
+  await expect(page.getByRole('link', { name: /새로운 이야기/ })).toHaveCount(0);
 });
 
 test('주제 필터로 목록이 걸러진다', async ({ page }) => {

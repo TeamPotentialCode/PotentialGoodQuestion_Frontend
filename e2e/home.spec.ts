@@ -48,7 +48,12 @@ test('아이가 있으면 이어하기 없음과 추천 이야기를 보여준�
 
   await expect(page.getByRole('heading', { name: '오늘의 추천 이야기' })).toBeVisible();
   await expect(page.getByRole('listitem').filter({ hasText: '방귀 뀌는 며느리' })).toBeVisible();
-  await expect(page.getByText(/난이도: 보통/)).toBeVisible();
+  // 시안: 뱃지 + 소요 시간이 한 줄, 주제는 점으로 이어 쓴다
+  await expect(page.getByText('시작 가능')).toBeVisible();
+  await expect(page.getByText('다름 · 자기이해 · 장점 발견')).toBeVisible();
+  // 추천은 늘 3장 — 모자란 자리는 "준비 중"이 메우고 누를 수 없다
+  await expect(page.getByText('준비 중', { exact: true })).toHaveCount(2);
+  await expect(page.getByRole('link', { name: /이야기 제목/ })).toHaveCount(0);
 });
 
 test('진행 중 세션이 있으면 이어하기 카드가 뜬다', async ({ page }) => {

@@ -68,7 +68,10 @@ test('비밀번호가 틀리면 안내 문구를 보여준다', async ({ page })
   await page.getByLabel('비밀번호', { exact: true }).fill('wrongpassword');
   await page.getByRole('button', { name: '로그인' }).click();
 
-  await expect(formAlert(page).first()).toHaveText('이메일 또는 비밀번호를 확인해 주세요.');
+  await expect(formAlert(page).first()).toHaveText('이메일 또는 비밀번호를 다시 확인해 주세요.');
+  // 시안: 어느 쪽이 틀렸는지 서버가 알려주지 않으므로 두 칸 모두 잘못된 상태로 표시한다
+  await expect(page.getByLabel('이메일')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByLabel('비밀번호', { exact: true })).toHaveAttribute('aria-invalid', 'true');
   await expect(page).toHaveURL(/\/login/);
 });
 

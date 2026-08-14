@@ -31,6 +31,8 @@
   --gq-cta-ink: var(--palette-0);
   --gq-record: var(--palette-700);
   --gq-record-active: var(--palette-900);
+  /* 오류 — 시안 v4 가 로그인 실패에 빨간 테두리를 쓴다. 확정 색이 오면 여기만 바꾼다 */
+  --gq-danger: #d93a3a;
 
   /*
    * 3. 타이포 — PRD 기기 3단계.
@@ -78,6 +80,7 @@
   --color-ink: var(--gq-ink);
   --color-ink-soft: var(--gq-ink-soft);
   --color-line: var(--gq-line);
+  --color-danger: var(--gq-danger);
   --color-bubble-character: var(--gq-bubble-character);
   --color-bubble-child: var(--gq-bubble-child);
   --color-bubble-narration: var(--gq-bubble-narration);
