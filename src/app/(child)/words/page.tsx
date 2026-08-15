@@ -54,8 +54,12 @@ export default function WordsPage() {
 
   const list = words.data?.words ?? [];
   const shown = onlyFavorites ? list.filter((word) => word.favorite) : list;
-  // 목록이 오기 전에 빈 상태를 번쩍이면 "단어가 사라졌다"로 읽힌다
-  const loading = childId !== undefined && words.isPending;
+  /*
+   * 목록이 오기 전에 빈 상태를 번쩍이면 "단어가 사라졌다"로 읽힌다.
+   * 아이를 아직 못 정한 동안도 로딩이다 — 실백엔드에서는 아이 조회가 먼저 끝나야
+   * 단어 요청이 나가서, 이 구간을 빼면 "아직 모은 단어가 없어요!" 가 1초쯤 스쳐 지나간다
+   */
+  const loading = child.query.isPending || (childId !== undefined && words.isPending);
 
   return (
     <Screen scrollable className="py-6" data-testid="wordbook">
