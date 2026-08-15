@@ -282,3 +282,9 @@ $RECYCLE.BIN/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# 확인용 스크린샷이 저장소 루트에 딸려 들어온 적이 있다.
+# 화면에 쓰는 이미지는 public/ 에 둔다 — 루트의 이미지는 전부 임시 파일로 본다
+/*.png
+/*.jpg
+/*.jpeg
