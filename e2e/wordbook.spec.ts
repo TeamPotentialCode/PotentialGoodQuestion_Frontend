@@ -44,10 +44,20 @@ test('이야기 중 모르는 단어를 담으면 단어장에 뜻과 함께 쌓
 
   // "방귀를"은 두 문장에 나와 모호하다 — 한 번만 나오는 낱말을 쓴다
   await page.getByRole('button', { name: '며느리가 담기' }).click();
-  await expect(page.getByText('"며느리가" 담았어요!')).toBeVisible({ timeout: 20000 });
 
-  // 같은 단어를 또 누르면 요청을 보내지 않고 이미 담았다고 알려준다
+  // 누른 자리에서 바로 뜻 카드가 뜬다 (뜻은 백엔드가 저장하면서 GPT 로 만든다)
+  const popup = page.getByRole('dialog', { name: '며느리가 뜻' });
+  await expect(popup).toBeVisible();
+  await expect(popup.getByText('아들의 아내를 부르는 말이에요.')).toBeVisible({ timeout: 20000 });
+  await expect(popup.getByText(/예: /)).toBeVisible();
+  await popup.getByRole('button', { name: '닫기' }).click();
+  await expect(popup).toBeHidden();
+  await expect(page.getByText('"며느리가" 담았어요!')).toBeVisible();
+
+  // 같은 단어를 또 누르면 저장 요청 없이 뜻만 다시 보여준다 (사전처럼)
   await page.getByRole('button', { name: '며느리가 담기' }).click();
+  await expect(popup.getByText('아들의 아내를 부르는 말이에요.')).toBeVisible();
+  await popup.getByRole('button', { name: '닫기' }).click();
   await expect(page.getByText('이미 담아 뒀어!')).toBeVisible();
 
   // 담은 단어는 단어장에 뜻·예시와 함께 있다 (뜻은 백엔드가 저장할 때 만든다)
@@ -69,6 +79,10 @@ test('개수 요약을 누르면 전체·즐겨찾기로 걸러진다', async ({
   await page.getByRole('button', { name: '단어 담기' }).click();
   for (const word of ['며느리가', '시집온']) {
     await page.getByRole('button', { name: `${word} 담기` }).click();
+    // 카드를 닫아야 다음 단어를 누를 수 있다
+    const card = page.getByRole('dialog', { name: `${word} 뜻` });
+    await expect(card).toBeVisible();
+    await card.getByRole('button', { name: '닫기' }).click();
     await expect(page.getByText(`"${word}" 담았어요!`)).toBeVisible({ timeout: 20000 });
   }
 
@@ -92,6 +106,7 @@ test('마이페이지에 성장 레이더와 어려웠던 단어가 함께 나�
   await enterNarration(page);
   await page.getByRole('button', { name: '단어 담기' }).click();
   await page.getByRole('button', { name: '며느리가 담기' }).click();
+  await page.getByRole('dialog', { name: '며느리가 뜻' }).getByRole('button', { name: '닫기' }).click();
   await expect(page.getByText('"며느리가" 담았어요!')).toBeVisible({ timeout: 20000 });
 
   await page.goto('/me');

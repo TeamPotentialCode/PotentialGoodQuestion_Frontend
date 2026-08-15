@@ -4,9 +4,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import type { WordInfo, WordList } from '@/core/api/types';
 import { splitLines, splitTokens } from '@/core/wordbook/tokenize';
-import { growthKey, saveWord, wordsKey } from '@/features/wordbook/api';
+import { getWords, growthKey, saveWord, wordsKey } from '@/features/wordbook/api';
 import { wordSaveMessage, wordSaveOutcome } from '@/features/wordbook/error-message';
 import { getSavedWords, markWordSaved } from '@/features/wordbook/saved-words';
+import { WordPopup } from '@/features/wordbook/word-popup';
 import { cn, Icon, TouchTarget } from '@/shared/ui';
 
 interface WordCatchProps {
@@ -25,8 +26,8 @@ type SaveState = 'saving' | 'saved' | 'duplicate' | 'error';
  * 평소에는 **그냥 글**이다. 모드를 켜야 단어가 눌리는 버튼이 된다 —
  * 아이가 이야기를 읽는 동안 글자마다 버튼이면 읽기를 방해하고, 오탭도 는다.
  *
- * 저장은 백엔드에서 GPT 를 부르기 때문에 느리다(실측 19~38초). 그래서
- * 모달로 막지 않고, 누른 단어 자신이 담기는 중 → 담음으로 변한다.
+ * 단어를 누르면 뜻 카드가 **즉시** 뜬다(뜻은 GPT 가 만드는 동안 "만드는 중"으로 채운다).
+ * 뜻을 보려고 단어장까지 가야 하면 궁금해진 그 순간을 놓친다.
  * 여러 단어를 연달아 눌러도 각각이 따로 진행된다(useMutation 하나로는 최신 것만 남는다).
  */
 export function WordCatch({ childId, text, footer }: WordCatchProps) {
@@ -34,16 +35,40 @@ export function WordCatch({ childId, text, footer }: WordCatchProps) {
   const [picking, setPicking] = useState(false);
   const [states, setStates] = useState<Record<string, SaveState>>({});
   const [notice, setNotice] = useState('');
+  // 지금 열려 있는 카드의 단어와, 단어별로 받아 둔 카드 내용
+  const [openWord, setOpenWord] = useState<string | null>(null);
+  const [cards, setCards] = useState<Record<string, WordInfo>>({});
+  const [cardError, setCardError] = useState<string | null>(null);
 
   // 이 기기에 남은 기록 — 화면이 바뀌어도 "담음" 표시가 유지된다
   const alreadySaved = childId === null ? new Set<string>() : getSavedWords(childId);
 
   async function pick(word: string, sentence: string) {
     if (childId === null) return;
-    // 이미 담은 단어는 요청 자체를 보내지 않는다 (서버 중복 응답 형태에 기대지 않는다)
+    // 누르는 즉시 카드를 연다 — 뜻은 나중에 채운다
+    setOpenWord(word);
+    setCardError(null);
+
+    /*
+     * 이미 담은 단어는 저장 요청을 보내지 않는다(서버 중복 응답 형태에 기대지 않는다).
+     * 대신 뜻을 다시 보여준다 — 사전처럼 쓰이라는 뜻이다.
+     * fetchQuery 라 단어장을 이미 받아 뒀으면 요청이 안 나가고, 없으면 한 번만 나간다
+     */
     if (states[word] === 'saving' || states[word] === 'saved' || alreadySaved.has(word)) {
-      setStates((prev) => ({ ...prev, [word]: 'duplicate' }));
+      setStates((prev) => (prev[word] === 'saving' ? prev : { ...prev, [word]: 'duplicate' }));
       setNotice('이미 담아 뒀어!');
+      if (cards[word]) return;
+      try {
+        const list = await queryClient.fetchQuery({
+          queryKey: wordsKey(childId),
+          queryFn: () => getWords(childId),
+        });
+        const found = list.words.find((w) => w.word === word);
+        if (found) setCards((prev) => ({ ...prev, [word]: found }));
+        else setCardError('뜻을 찾지 못했어. 단어장에서 확인해 줄래?');
+      } catch {
+        setCardError('뜻을 불러오지 못했어. 잠시 뒤에 다시 눌러 줄래?');
+      }
       return;
     }
 
@@ -58,6 +83,7 @@ export function WordCatch({ childId, text, footer }: WordCatchProps) {
       markWordSaved(childId, word);
       setStates((prev) => ({ ...prev, [word]: 'saved' }));
       setNotice(`"${saved.word}" 담았어요!`);
+      setCards((prev) => ({ ...prev, [word]: saved }));
       /*
        * 단어장을 바로 열어도 비어 있지 않게 응답을 캐시에 먼저 꽂는다.
        * 목록 쿼리가 아직 한 번도 안 돌았으면(undefined) 건드리지 않는다 —
@@ -71,6 +97,7 @@ export function WordCatch({ childId, text, footer }: WordCatchProps) {
       if (outcome === 'duplicate') markWordSaved(childId, word);
       setStates((prev) => ({ ...prev, [word]: outcome }));
       setNotice(wordSaveMessage(error));
+      setCardError(wordSaveMessage(error));
     } finally {
       // wordStats 도 함께 낡는다 — 마이페이지가 낡은 값을 보여주지 않게 둘 다 무효화한다
       void queryClient.invalidateQueries({ queryKey: wordsKey(childId) });
@@ -132,6 +159,18 @@ export function WordCatch({ childId, text, footer }: WordCatchProps) {
         <CatchToggle picking onClick={() => setPicking(false)} />
         {footer}
       </ActionRow>
+
+      {openWord !== null && (
+        <WordPopup
+          word={openWord}
+          card={cards[openWord] ?? null}
+          error={cardError}
+          onClose={() => {
+            setOpenWord(null);
+            setCardError(null);
+          }}
+        />
+      )}
     </>
   );
 }
