@@ -21,6 +21,8 @@ interface PlayStageProps {
   phase: Phase;
   characterName: string;
   childName: string;
+  /** 단어 담기용 — 이 세션에 물린 아이 */
+  childId: number | null;
   sceneDescription: string;
   /** 장면 이미지 자리에 표시할 번호. 아직 못 불러왔으면 null */
   dialogueIndex: number | null;
@@ -46,6 +48,7 @@ export function PlayStage({
   phase,
   characterName,
   childName,
+  childId,
   sceneDescription,
   dialogueIndex,
   imageUrl,
@@ -71,6 +74,7 @@ export function PlayStage({
           text={sceneDescription}
           onReplay={onReplayScene}
           replayLabel="장면 설명 다시 듣기"
+          childId={childId}
         />
       }
       right={

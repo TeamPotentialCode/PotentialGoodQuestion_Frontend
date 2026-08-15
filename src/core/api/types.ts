@@ -355,8 +355,8 @@ export interface ActivityResult {
 
 // ---------- 단어장 · 활동 기록 ----------
 /*
- * 배포본 Swagger 에는 있으나 로컬 백엔드 체크아웃에는 아직 없는 API 다.
- * 데모 브랜치에 없을 수도 있어 화면은 실패를 "아직 없음"으로 읽고 빈 상태를 보여준다.
+ * 백엔드 khj_04(2026-08-13) 의 단어장·성장 레이더.
+ * 뜻·예시 문장은 **저장 시점에 GPT 로 만든다** — 응답이 느릴 수 있고, 실패하면 null 로 온다.
  */
 
 /** GET /children/{childId}/words */
@@ -378,6 +378,22 @@ export interface WordList {
   words: WordInfo[];
 }
 
+/** POST /children/{childId}/words — 아이가 담으면 CHILD, 보호자가 담으면 PARENT */
+export interface WordSaveRequest {
+  word: string;
+  contextSentence: string;
+  source: WordInfo['source'];
+}
+
+/** GrowthInfo.wordStats — 마이페이지의 "이런 단어가 어려웠어요" */
+export interface WordStats {
+  totalWords: number;
+  favoriteWords: number;
+  learnedWords: number;
+  /** 뜻은 GPT 생성이라 아직 없을 수 있다 */
+  recentWords: { word: string; meaning: string | null; savedAt: string }[];
+}
+
 /** GrowthInfo.recentSessions — "내 활동 기록"이 쓰는 부분 */
 export interface SessionSummary {
   sessionId: number;
@@ -393,4 +409,6 @@ export interface GrowthInfo {
   completedSessions: number;
   elementCounts: Record<string, number>;
   recentSessions: SessionSummary[];
+  /** khj_04 에서 추가됐다 — 그 전 배포본에는 없으므로 선택 필드로 둔다 */
+  wordStats?: WordStats;
 }

@@ -1,28 +1,47 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useState } from 'react';
 import { useRequireAuth } from '@/features/auth/use-session';
 import { AppHeader } from '@/features/child-profile/app-header';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
-import { getWords } from '@/features/wordbook/api';
-import { Icon, Screen, Stack, TabBar, TouchTarget } from '@/shared/ui';
+import { getWords, growthKey, toggleWordFavorite, wordsKey } from '@/features/wordbook/api';
+import { WordCard } from '@/features/wordbook/word-card';
+import { cn, Icon, Screen, Stack, TabBar, TouchTarget } from '@/shared/ui';
 
 /**
- * 단어장.
+ * 단어장 — 아이가 이야기 중 담은 단어와, 백엔드가 GPT 로 만든 쉬운 뜻·예시.
  *
- * 디자이너 주석: "실제로 기능이 작동하지는 않지만, 하단 바 눌렀을때 나오는 디자인".
- * 다만 배포본에 `GET /children/{id}/words` 가 이미 있어 그대로 붙였다 —
- * 없거나 실패하면 api 계층이 빈 목록으로 떨어뜨려 시안의 빈 상태가 그대로 나온다.
+ * 담기는 대화·내레이션 화면에서 한다(features/wordbook/word-catch.tsx).
+ * 여기서는 보여주기와 즐겨찾기만 한다.
  */
 export default function WordsPage() {
   const authenticated = useRequireAuth();
   const child = useSelectedChild(authenticated);
+  const childId = child.selected?.childId;
+  const queryClient = useQueryClient();
+  // 목록은 한 번에 다 받으므로 거르기는 화면에서 한다 — 서버에 필터 파라미터가 없다
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
 
   const words = useQuery({
-    queryKey: ['words', child.selected?.childId],
-    queryFn: () => getWords(child.selected!.childId),
-    enabled: authenticated && child.selected !== undefined,
+    queryKey: wordsKey(childId),
+    queryFn: () => getWords(childId!),
+    enabled: authenticated && childId !== undefined,
+    /*
+     * 뜻은 저장 뒤에 GPT 가 만들어 붙인다(실서버 19~38초).
+     * 아직 안 온 단어가 있으면 화면이 스스로 다시 물어본다 — 아이가 새로고침할 이유를 없앤다
+     */
+    refetchInterval: (query) =>
+      query.state.data?.words.some((w) => w.meaning === null) ? 3000 : false,
+  });
+
+  const favorite = useMutation({
+    mutationFn: toggleWordFavorite,
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: wordsKey(childId) });
+      await queryClient.invalidateQueries({ queryKey: growthKey(childId) });
+    },
   });
 
   if (!authenticated) {
@@ -34,6 +53,9 @@ export default function WordsPage() {
   }
 
   const list = words.data?.words ?? [];
+  const shown = onlyFavorites ? list.filter((word) => word.favorite) : list;
+  // 목록이 오기 전에 빈 상태를 번쩍이면 "단어가 사라졌다"로 읽힌다
+  const loading = childId !== undefined && words.isPending;
 
   return (
     <Screen scrollable className="py-6" data-testid="wordbook">
@@ -45,7 +67,9 @@ export default function WordsPage() {
           onSelect={child.select}
         />
 
-        {list.length === 0 ? (
+        {loading ? (
+          <p className="py-16 text-center text-body text-ink-soft">불러오는 중…</p>
+        ) : list.length === 0 ? (
           <Stack gap="lg" align="center" className="py-16">
             <div
               aria-hidden
@@ -67,26 +91,79 @@ export default function WordsPage() {
             </Link>
           </Stack>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {list.map((word) => (
-              <li
-                key={word.wordId}
-                className="flex items-start gap-3 rounded-card border border-line bg-white px-4 py-3"
-              >
-                <Icon name="bookmark" className="mt-1 size-5 text-ink-soft" />
-                <Stack gap="sm">
-                  <p className="text-body font-semibold text-ink">{word.word}</p>
-                  {word.contextSentence && (
-                    <p className="text-caption text-ink-soft">{word.contextSentence}</p>
-                  )}
-                </Stack>
+          <Stack gap="md">
+            {/* 개수 요약이 곧 필터다 — 이야기 목록(STORY-01)의 주제 칩과 같은 모양 */}
+            <ul className="flex flex-wrap gap-3" aria-label="단어 거르기">
+              <li>
+                <FilterChip active={!onlyFavorites} onClick={() => setOnlyFavorites(false)}>
+                  모은 단어 {words.data?.totalCount ?? list.length}개
+                </FilterChip>
               </li>
-            ))}
-          </ul>
+              <li>
+                <FilterChip active={onlyFavorites} onClick={() => setOnlyFavorites(true)}>
+                  <Icon
+                    name="star"
+                    className={cn('size-4', onlyFavorites ? 'fill-cta-ink' : 'fill-ink')}
+                  />
+                  즐겨찾기 {words.data?.favoriteCount ?? 0}개
+                </FilterChip>
+              </li>
+            </ul>
+
+            {shown.length === 0 ? (
+              // 단어는 있는데 즐겨찾기만 없는 상태 — 큰 빈 화면("아직 모은 단어가 없어요")은 틀린 안내다
+              <Stack gap="md" align="center" className="py-12">
+                <p className="text-bubble text-ink-soft">아직 즐겨찾기한 단어가 없어요.</p>
+                <p className="text-caption text-ink-faint">
+                  단어 카드의 별을 누르면 여기에 모여요.
+                </p>
+                <TouchTarget look="outline" onClick={() => setOnlyFavorites(false)}>
+                  전체 단어 보기
+                </TouchTarget>
+              </Stack>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {shown.map((word) => (
+                  <WordCard
+                    key={word.wordId}
+                    word={word}
+                    onToggleFavorite={favorite.mutate}
+                    busy={favorite.isPending}
+                  />
+                ))}
+              </ul>
+            )}
+          </Stack>
         )}
       </Stack>
 
       <TabBar />
     </Screen>
+  );
+}
+
+/** 개수 요약 겸 필터 — 이야기 목록(STORY-01)의 주제 칩과 같은 모양을 쓴다 */
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'flex min-h-touch items-center gap-2 rounded-control border px-4 text-body font-semibold',
+        'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
+        active ? 'border-cta bg-cta text-cta-ink' : 'border-line-strong bg-white text-ink',
+      )}
+    >
+      {children}
+    </button>
   );
 }

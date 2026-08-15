@@ -8,7 +8,8 @@ export type ScenarioName =
   | 'stt-fail-always' // STT 500 지속 (3연속 "조용한 곳" 문구 확인용)
   | 'analysis-fail-once' // utterances 500 1회 (TAP_RETRY + Idempotency-Key 재사용 확인용)
   | 'expired-token' // 보호 라우트 401, refresh 성공 시 해제
-  | 'slow-network'; // utterances 8초 지연 (대기 모션 확인용)
+  | 'slow-network' // utterances 8초 지연 (대기 모션 확인용)
+  | 'word-save-slow'; // 단어 저장 20초 지연 (실서버 GPT 지연 재현용 — E2E 에서는 쓰지 않는다)
 
 const STORAGE_KEY = 'gq:msw:scenario';
 

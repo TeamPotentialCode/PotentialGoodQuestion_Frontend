@@ -19,7 +19,10 @@ import type {
   SessionInfo,
   SignupRequest,
   UtteranceRequest,
+  WordInfo,
   WordList,
+  WordSaveRequest,
+  WordStats,
 } from '@/core/api/types';
 import {
   ACTIVITY_CARDS,
@@ -135,6 +138,96 @@ const consentsByChild = new Map<number, ConsentInfo>();
 let nextConsentId = 1;
 let nextChildId = 2;
 
+/*
+ * 단어장(khj_04). 시드는 비워 둔다 — 시안의 빈 상태와 그걸 단언하는 E2E 가 살아 있어야 한다.
+ * 실백엔드는 저장할 때 GPT 로 뜻·예시를 만든다. 목은 아래 사전으로 흉내 내고,
+ * 없는 단어는 일반 문구로 떨어뜨린다(실서버도 아무 단어나 받는다).
+ */
+const wordsByChild = new Map<number, WordInfo[]>();
+let nextWordId = 1;
+
+/*
+ * MSW 는 페이지 안에서 돌아 새로고침하면 모듈이 다시 로드된다.
+ * 담은 단어가 메모리에만 있으면 새로고침 한 번에 사라져 실백엔드와 다르게 보인다 —
+ * 세션(session-store.ts)과 같은 방식으로 저장소에 실어 나른다.
+ */
+const WORDS_KEY = 'gq:msw:words';
+
+function persistWords(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(
+      WORDS_KEY,
+      JSON.stringify({ nextWordId, entries: [...wordsByChild.entries()] }),
+    );
+  } catch {
+    // 저장이 막혀 있으면 메모리로만 동작한다 (노드 테스트 등)
+  }
+}
+
+function restoreWords(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(WORDS_KEY);
+    if (!raw) return;
+    const payload = JSON.parse(raw) as { nextWordId: number; entries: [number, WordInfo[]][] };
+    nextWordId = payload.nextWordId;
+    for (const [childId, list] of payload.entries) wordsByChild.set(childId, list);
+  } catch {
+    localStorage.removeItem(WORDS_KEY);
+  }
+}
+
+restoreWords();
+
+const WORD_GLOSSARY: Record<string, { meaning: string; example: string }> = {
+  며느리: {
+    meaning: '아들의 아내를 부르는 말이에요.',
+    example: '할머니는 며느리와 함께 밥을 지었어요.',
+  },
+  방귀: {
+    meaning: '배 속에 있던 공기가 몸 밖으로 나오는 거예요.',
+    example: '방귀가 나올 것 같아서 화장실로 달려갔어요.',
+  },
+  창피하다: {
+    meaning: '다른 사람들 앞에서 부끄럽고 민망한 느낌이에요.',
+    example: '발표하다가 틀려서 창피했지만 괜찮다고 말했어요.',
+  },
+  시집온: {
+    meaning: '결혼해서 남편의 집으로 온 것을 말해요.',
+    example: '엄마는 시집온 뒤로 이 마을에 살았어요.',
+  },
+};
+
+/** 사전에 없으면 문맥을 그대로 되돌려 주는 일반 문구 — 실서버 GPT 응답 자리를 채운다 */
+function glossFor(word: string): { meaning: string; example: string } {
+  const hit = Object.entries(WORD_GLOSSARY).find(([key]) => word.startsWith(key));
+  if (hit) return hit[1];
+  return {
+    meaning: `이야기에 나온 "${word}" 라는 말이에요.`,
+    example: `오늘 이야기에서 "${word}" 를 만났어요.`,
+  };
+}
+
+function wordsOf(childId: number): WordInfo[] {
+  if (!wordsByChild.has(childId)) wordsByChild.set(childId, []);
+  return wordsByChild.get(childId)!;
+}
+
+function buildWordStats(childId: number): WordStats {
+  const list = wordsOf(childId);
+  return {
+    totalWords: list.length,
+    favoriteWords: list.filter((w) => w.favorite).length,
+    learnedWords: list.filter((w) => w.learned).length,
+    // 최근 저장 순 3개 — 마이페이지 "이런 단어가 어려웠어요"
+    recentWords: [...list]
+      .reverse()
+      .slice(0, 3)
+      .map((w) => ({ word: w.word, meaning: w.meaning, savedAt: w.createdAt })),
+  };
+}
+
 /** 목 액세스 토큰은 mock-access-{parentId} 형태다 */
 function parentIdOf(request: Request): number {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
@@ -174,6 +267,9 @@ export function resetApiState(): void {
   nextChildId = 2;
   consentsByChild.clear();
   nextConsentId = 1;
+  wordsByChild.clear();
+  nextWordId = 1;
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(WORDS_KEY);
 }
 
 /** 아이 미등록 상태를 만든다(등록 화면 확인용). 새로고침해도 유지된다. */
@@ -280,12 +376,69 @@ export const handlers = [
   // ---------- 단어장 · 성장 기록 ----------
   // 실백엔드에도 있는 API 다. 시드에 단어는 없고(시안의 빈 상태),
   // 완료한 세션만 "내 활동 기록"으로 넘어간다
-  http.get(api('/children/:childId/words'), async ({ request }) => {
+  http.get(api('/children/:childId/words'), async ({ request, params }) => {
     await simulateLatency();
     const denied = requireAuth(request);
     if (denied) return denied;
-    const empty: WordList = { totalCount: 0, favoriteCount: 0, words: [] };
-    return ok(empty);
+    const list = wordsOf(Number(params.childId));
+    // 최근 저장 순 (실백엔드 계약)
+    const words = [...list].reverse();
+    const payload: WordList = {
+      totalCount: words.length,
+      favoriteCount: words.filter((w) => w.favorite).length,
+      words,
+    };
+    return ok(payload);
+  }),
+
+  // 저장은 GPT 를 부르므로 실서버에서 느리다. 목은 900ms 로 흉내 내고,
+  // 진짜 느린 경우(19~38초)는 시나리오 스위치로만 재현한다 — E2E 타임아웃이 60초다
+  http.post(api('/children/:childId/words'), async ({ request, params }) => {
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const childId = Number(params.childId);
+    const body = (await request.json()) as WordSaveRequest;
+    const word = body.word?.trim() ?? '';
+    if (!word) return fail(500, 'WORD_004', '단어 뜻·예시 문장 생성에 실패했습니다.');
+
+    const list = wordsOf(childId);
+    if (list.some((w) => w.word === word)) {
+      return fail(409, 'WORD_003', '이미 저장된 단어입니다.');
+    }
+
+    await simulateLatency(getScenario() === 'word-save-slow' ? 20_000 : 900);
+    const { meaning, example } = glossFor(word);
+    const saved: WordInfo = {
+      wordId: nextWordId++,
+      word,
+      contextSentence: body.contextSentence ?? null,
+      meaning,
+      exampleSentence: example,
+      source: body.source ?? 'CHILD',
+      favorite: false,
+      learned: false,
+      createdAt: new Date().toISOString(),
+    };
+    list.push(saved);
+    persistWords();
+    return ok(saved, 201);
+  }),
+
+  // 경로가 children 하위가 아니다 (백엔드 계약)
+  http.patch(api('/words/:wordId/favorite'), async ({ request, params }) => {
+    await simulateLatency();
+    const denied = requireAuth(request);
+    if (denied) return denied;
+    const wordId = Number(params.wordId);
+    for (const list of wordsByChild.values()) {
+      const found = list.find((w) => w.wordId === wordId);
+      if (found) {
+        found.favorite = !found.favorite;
+        persistWords();
+        return ok(found);
+      }
+    }
+    return fail(404, 'WORD_001', '단어를 찾을 수 없습니다.');
   }),
 
   http.get(api('/children/:childId/growth'), async ({ request, params }) => {
@@ -315,6 +468,7 @@ export const handlers = [
       completedSessions: sessions.filter((s) => s.status === 'COMPLETED').length,
       elementCounts,
       recentSessions: sessions,
+      wordStats: buildWordStats(childId),
     };
     return ok(growth);
   }),

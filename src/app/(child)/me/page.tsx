@@ -1,17 +1,30 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clearTokens } from '@/core/api/auth-token';
 import { useRequireAuth } from '@/features/auth/use-session';
 import { AppHeader } from '@/features/child-profile/app-header';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
+import { getGrowth, growthKey } from '@/features/wordbook/api';
+import { ElementRadar } from '@/features/wordbook/element-radar';
 import { Icon, Screen, Stack, TabBar } from '@/shared/ui';
 
 export default function MyPage() {
   const authenticated = useRequireAuth();
   const child = useSelectedChild(authenticated);
+  const childId = child.selected?.childId;
   const router = useRouter();
+
+  const growth = useQuery({
+    queryKey: growthKey(childId),
+    queryFn: () => getGrowth(childId!),
+    enabled: authenticated && childId !== undefined,
+  });
+
+  // 담은 단어가 없으면 이 구획은 아예 그리지 않는다 — 빈 카드가 시안보다 나쁘다
+  const recentWords = growth.data?.wordStats?.recentWords ?? [];
 
   if (!authenticated) {
     return (
@@ -31,22 +44,18 @@ export default function MyPage() {
         onSelect={child.select}
       />
 
-      <Stack gap="lg" className="mx-auto w-full max-w-lg">
-        {/*
-         * 시안(v6 MY-01)에는 프로필 카드 + 활동 기록만 있다 — 성장 레이더는 화면에서 뺐다
-         * (컴포넌트·API 연동은 남아 있어 디자인이 자리를 잡으면 다시 붙일 수 있다)
-         */}
+      <Stack gap="md" className="mx-auto w-full max-w-lg pb-6">
         <Stack
           direction="row"
           align="center"
           gap="lg"
-          className="mt-24 rounded-card border border-line bg-white p-8"
+          className="mt-6 rounded-card border border-line bg-white p-6"
         >
           <span
             aria-hidden
-            className="flex size-24 shrink-0 items-center justify-center rounded-full bg-surface-raised text-ink-faint"
+            className="flex size-20 shrink-0 items-center justify-center rounded-full bg-surface-raised text-ink-faint"
           >
-            <Icon name="person" className="size-10" />
+            <Icon name="person" className="size-9" />
           </span>
           <Stack gap="sm" align="start">
             <p className="text-display font-extrabold text-ink">
@@ -85,6 +94,51 @@ export default function MyPage() {
           </span>
           <Icon name="chevron-right" className="size-5 text-ink-soft" />
         </Link>
+
+        {/*
+         * 사고 요소 성장 레이더 — 이야기에서 탐지된 요소가 쌓이는 그래프.
+         * ElementRadar 가 기록 0 인 경우까지 스스로 안내하므로 여기서 따로 분기하지 않는다
+         */}
+        <section aria-label="사고력 성장" className="rounded-card border border-line bg-white p-6">
+          <Stack gap="md">
+            <Stack direction="row" align="center" justify="between" gap="md">
+              <h2 className="text-title font-extrabold text-ink">생각이 자라고 있어요</h2>
+              <span className="text-caption text-ink-soft">
+                이야기 {growth.data?.completedSessions ?? 0}개 완료
+              </span>
+            </Stack>
+            {/* 레이더 자체 폭은 max-w-64 다 — 아이패드 세로 768px 안에 카드가 다 들어오게 조인다 */}
+            <div className="mx-auto w-full max-w-52">
+              <ElementRadar counts={growth.data?.elementCounts ?? {}} />
+            </div>
+          </Stack>
+        </section>
+
+        {recentWords.length > 0 && (
+          <section
+            aria-label="이런 단어가 어려웠어요"
+            className="rounded-card border border-line bg-white p-6"
+          >
+            <Stack gap="md">
+              <Stack direction="row" align="center" justify="between" gap="md">
+                <h2 className="text-title font-extrabold text-ink">이런 단어가 어려웠어요</h2>
+                <Link href="/words" className="text-caption font-semibold text-ink underline">
+                  단어장 보기
+                </Link>
+              </Stack>
+              <ul className="flex flex-col gap-3">
+                {recentWords.map((word) => (
+                  <li key={`${word.word}-${word.savedAt}`}>
+                    <p className="text-body font-bold text-ink">{word.word}</p>
+                    <p className="text-caption text-ink-soft">
+                      {word.meaning ?? '뜻을 만들고 있어요…'}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </Stack>
+          </section>
+        )}
 
         <button
           type="button"

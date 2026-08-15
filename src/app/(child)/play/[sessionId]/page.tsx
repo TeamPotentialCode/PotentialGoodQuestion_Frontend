@@ -92,6 +92,8 @@ export default function PlayPage() {
           <PlayNarration
             page={narrationPage}
             total={scene?.narrationTotal ?? 0}
+            // 단어를 담을 아이는 지금 고른 아이가 아니라 이 세션에 물린 아이다
+            childId={session.data.childId}
             onReplay={play.replayNarration}
             onNext={play.advanceNarration}
           />
@@ -100,6 +102,7 @@ export default function PlayPage() {
             phase={state.phase}
             characterName={scene?.characterName ?? ''}
             childName={play.childName}
+            childId={session.data.childId}
             sceneDescription={scene?.sceneDescription ?? ''}
             dialogueIndex={scene?.dialogueIndex ?? null}
             imageUrl={

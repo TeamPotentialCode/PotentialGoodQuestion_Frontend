@@ -50,10 +50,11 @@ test('탭 4개가 모두 열려 있고 현재 위치를 표시한다', async ({ 
   await expect(page.getByText('아직 모은 단어가 없어요!')).toBeVisible();
   await expect(page.getByRole('link', { name: '이야기 보러 가기' })).toBeVisible();
 
-  // 마이페이지 → 프로필 카드 + 내 활동 기록 (v6 — 성장 레이더는 시안에 없어 화면에서 뺐다)
+  // 마이페이지 → 프로필 카드 + 내 활동 기록 + 성장 레이더(기록이 없어도 8각형은 그린다)
   await tabs(page).getByRole('link', { name: '마이페이지' }).click();
   await page.waitForURL('**/me');
   await expect(page.getByRole('link', { name: '아이 정보 수정' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /사고 요소 성장 그래프/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /내 활동 기록/ })).toBeVisible();
   await page.getByRole('link', { name: /내 활동 기록/ }).click();
   await page.waitForURL('**/me/history');

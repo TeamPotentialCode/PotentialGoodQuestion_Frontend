@@ -8,12 +8,14 @@ interface PlayNarrationProps {
   page: NarrationPage;
   /** 이야기 전체 내레이션 수 — 점 인디케이터 개수 */
   total: number;
+  /** 단어 담기용 — 이 세션에 물린 아이 */
+  childId: number | null;
   onReplay: () => void;
   onNext: () => void;
 }
 
 // v6 scene-story: 좌측 삽화 + 낭독 패널, 우측은 안내 문구가 가운데, 바닥에 점 인디케이터 + "다음"
-export function PlayNarration({ page, total, onReplay, onNext }: PlayNarrationProps) {
+export function PlayNarration({ page, total, childId, onReplay, onNext }: PlayNarrationProps) {
   return (
     <TwoPane
       rightFill
@@ -24,6 +26,7 @@ export function PlayNarration({ page, total, onReplay, onNext }: PlayNarrationPr
           text={page.text}
           onReplay={onReplay}
           replayLabel="내레이션 다시 듣기"
+          childId={childId}
         />
       }
       right={
