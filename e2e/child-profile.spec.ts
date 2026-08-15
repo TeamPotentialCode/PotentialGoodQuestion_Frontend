@@ -50,7 +50,7 @@ test('아이가 없으면 등록 폼을 보여주고, 등록하면 목록과 홈
 
   // 등록 다음은 보호자 동의다 — 동의 없이는 활동을 시작할 수 없다(MVP 규칙)
   await page.waitForURL(/\/children\/\d+\/consent/);
-  await expect(page.getByText('보호자 동의가 필요해요')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '보호자 동의가 필요해요' })).toBeVisible();
   await expect(page.getByText('하늘 · 2019. 03. 14. (7세)')).toBeVisible();
   await expect(page.getByRole('button', { name: '동의하고 계속하기' })).toBeDisabled();
   await page.getByLabel('아동 개인정보 수집·이용 동의 (필수)').check();

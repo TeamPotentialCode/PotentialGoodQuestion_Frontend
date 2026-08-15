@@ -5,5 +5,6 @@
 body {
   background: var(--gq-surface);
   color: var(--gq-ink);
-  font-family: var(--font-geist-sans), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  /* v6: 라틴 Inter → 한글 Gothic A1 순서로 폴백 */
+  font-family: var(--font-inter), var(--font-gothic-a1), "Apple SD Gothic Neo", sans-serif;
 }

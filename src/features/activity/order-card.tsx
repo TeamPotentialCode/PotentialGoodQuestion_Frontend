@@ -54,7 +54,7 @@ export function OrderCard({ card, slot, solved = false, imageUrl = null }: Order
             : `${slot}번째 자리: ${card.text}. 스페이스바를 누른 뒤 좌우 화살표로 자리를 옮기세요`
         }
         className={cn(
-          'relative flex h-full cursor-grab flex-col items-center gap-3 rounded-card border border-line bg-surface p-4 text-left',
+          'relative flex h-full cursor-grab flex-col items-center gap-3 rounded-card border border-line bg-white p-3 text-left',
           'touch-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
           isDragging && 'z-10 opacity-80 shadow-lg',
           solved && 'cursor-default',
@@ -69,16 +69,18 @@ export function OrderCard({ card, slot, solved = false, imageUrl = null }: Order
           </span>
         )}
         {imageUrl ? (
-          <span className="w-full flex-1 overflow-hidden rounded-card bg-surface-raised">
+          <span className="w-full flex-1 overflow-hidden rounded-control bg-surface-raised">
             {/* eslint-disable-next-line @next/next/no-img-element -- 프로젝트 정적 삽화 */}
             <img src={imageUrl} alt="" className="size-full min-h-24 object-cover" />
           </span>
         ) : (
-          <span className="flex w-full flex-1 items-center justify-center rounded-card bg-surface-raised py-6 text-ink-soft">
+          <span className="flex w-full flex-1 items-center justify-center rounded-control bg-surface-raised py-6 text-ink-soft">
             <Icon name="image" className="size-8" />
           </span>
         )}
-        <span className="text-caption text-ink">{card.text}</span>
+        <span className="rounded-[6px] border border-line-strong bg-white px-2.5 py-1 text-center text-caption text-ink">
+          {card.text}
+        </span>
         {!solved && <Icon name="grip" className="text-ink-soft" />}
       </button>
     </li>

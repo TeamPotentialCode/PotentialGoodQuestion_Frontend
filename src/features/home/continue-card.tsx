@@ -24,21 +24,30 @@ export function ContinueCard({ session, estimatedMinutes, progress }: ContinueCa
     <Stack
       direction="row"
       align="center"
-      gap="md"
-      className="rounded-card border border-line bg-surface p-4"
+      gap="lg"
+      className="rounded-card border border-line bg-white p-6"
     >
       <ImageSlot
         src={storyThumbnail(session.storyId) ?? session.thumbnailUrl}
         label="이야기 썸네일"
-        size="thumb"
+        size="bare"
+        className="size-[152px] shrink-0 rounded-control"
       />
 
       <Stack gap="sm" className="min-w-0 flex-1">
-        <p className="text-title font-bold text-ink">{session.storyTitle}</p>
-        <p className="text-caption font-semibold text-ink-soft">
-          {progress && `장면 ${progress.current} / ${progress.total}`}
-          {progress && estimatedMinutes !== undefined && <span aria-hidden> | </span>}
-          {estimatedMinutes !== undefined && `예상 활동 시간: ${estimatedMinutes}분`}
+        <p className="text-display font-extrabold text-ink">{session.storyTitle}</p>
+        <p className="flex items-center text-bubble">
+          {progress && (
+            <span className="font-bold text-ink">
+              장면 {progress.current} / {progress.total}
+            </span>
+          )}
+          {progress && estimatedMinutes !== undefined && (
+            <span aria-hidden className="mx-4 h-4 w-px shrink-0 bg-line-strong" />
+          )}
+          {estimatedMinutes !== undefined && (
+            <span className="text-ink-soft">예상 활동 시간: {estimatedMinutes}분</span>
+          )}
         </p>
         <span
           role="progressbar"
@@ -46,7 +55,7 @@ export function ContinueCard({ session, estimatedMinutes, progress }: ContinueCa
           aria-valuemin={0}
           aria-valuemax={progress?.total ?? 0}
           aria-label="이야기 진행"
-          className="block h-2 w-full overflow-hidden rounded-full bg-line"
+          className="mt-1 block h-2 w-full overflow-hidden rounded-full bg-line"
         >
           <span className="block h-full rounded-full bg-ink" style={{ width: `${ratio}%` }} />
         </span>

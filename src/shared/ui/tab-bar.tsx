@@ -24,7 +24,7 @@ interface TabItem {
  * 그래서 fixed 로 띄우고, 같은 높이의 자리표시를 함께 렌더해 본문 끝이 가려지지 않게 한다.
  * 자리표시가 컴포넌트 안에 있으니 쓰는 쪽은 <TabBar /> 하나만 두면 된다.
  */
-const BAR_HEIGHT = 'h-[4.5rem]';
+const BAR_HEIGHT = 'h-[68px]';
 const TABS: TabItem[] = [
   { href: '/home', label: '홈', icon: 'home' },
   { href: '/stories', label: '이야기', icon: 'book' },
@@ -43,27 +43,31 @@ export function TabBar({ className }: { className?: string }) {
       <nav
         aria-label="주요 메뉴"
         className={cn(
-          'fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface',
+          'fixed inset-x-0 bottom-0 z-10 border-t border-line bg-white',
           'pb-[env(safe-area-inset-bottom)]',
           className,
         )}
       >
-        <ul className={cn('mx-auto flex w-full max-w-2xl items-center justify-around', BAR_HEIGHT)}>
+        <ul className={cn('mx-auto flex w-full items-stretch justify-around', BAR_HEIGHT)}>
           {TABS.map((tab) => {
             const active = !tab.disabled && (pathname === tab.href || pathname.startsWith(`${tab.href}/`));
             const inner = (
               <>
+                {/* 활성 탭 표시 — 탭바 맨 윗변에 붙는 짧은 검정 바 */}
+                {active && (
+                  <span aria-hidden className="absolute -top-px h-[3px] w-14 bg-tab-active" />
+                )}
                 <Icon name={tab.icon} className="size-6" />
-                <span className={cn('text-caption', active && 'font-semibold')}>{tab.label}</span>
+                <span className="text-[12px] font-semibold">{tab.label}</span>
               </>
             );
             const shape = cn(
-              'flex min-h-touch flex-col items-center justify-center gap-1 px-5',
+              'relative flex h-full min-h-touch flex-col items-center justify-center gap-1.5 px-5',
               'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
-              active ? 'text-ink' : 'text-ink-soft',
+              active ? 'text-tab-active' : 'text-tab-inactive',
             );
             return (
-              <li key={tab.href}>
+              <li key={tab.href} className="flex items-stretch">
                 {tab.disabled ? (
                   <button type="button" disabled title="준비 중이에요" className={cn(shape, 'opacity-40')}>
                     {inner}

@@ -12,7 +12,7 @@ export function Screen({ scrollable = false, className, children, ...rest }: Scr
       className={cn(
         'flex min-h-dvh w-full flex-col bg-surface text-body text-ink',
         'pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
-        'px-4 md:px-10',
+        'px-4 md:px-8', // v6 본문 좌우 여백 32px
         scrollable ? 'overflow-y-auto' : 'overflow-hidden',
         className,
       )}

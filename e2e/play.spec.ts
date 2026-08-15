@@ -128,18 +128,15 @@ test('한 턴을 완주한다: 자동 녹음 → 보내기 → 확인 → 보내
   await page.getByRole('button', { name: '보내기' }).click();
   // transcribing 은 순식간에 지나갈 수 있으므로 다음 상태로 바로 확인한다
   await expect(stage(page)).toHaveAttribute('data-state', 'reviewing', { timeout: 20000 });
-  await expect(page.getByText('이렇게 말했나요?')).toBeVisible();
+  // v6: 아이가 한 말이 "이름 (나)" 라벨이 붙은 말풍선으로 보인다
+  await expect(page.getByText('문열 (나)')).toBeVisible();
 
   await page.getByRole('button', { name: '보내기' }).click();
   // 응답 재생이 끝나면 다시 아이 차례 — 마이크가 저절로 켜진다
   await expect(stage(page)).toHaveAttribute('data-state', 'recording', { timeout: 25000 });
 
-  // 큰 말풍선은 새 응답으로 교체되고, 지나간 대사는 "최근 이야기"에 남는다
+  // 큰 말풍선은 새 응답으로 교체된다 (v6 에는 별도 "최근 이야기" 목록이 없다)
   await expect(page.getByText(/그랬구나/).first()).toBeVisible();
-  const recent = page.getByRole('region', { name: '최근 이야기' });
-  await expect(recent.getByText(/문열아, 사실 나는 방귀가 너무 커서/)).toBeVisible();
-  // 아이가 한 말도 자기 이름으로 쌓인다
-  await expect(recent.getByText('문열 (나)')).toBeVisible();
 });
 
 test('확인 화면에서 다시 말하기를 누르면 녹음으로 돌아간다', async ({ page }) => {

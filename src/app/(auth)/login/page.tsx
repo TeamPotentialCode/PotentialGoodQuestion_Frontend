@@ -9,16 +9,18 @@ export default function LoginPage() {
       <Stack gap="md">
         <LoginForm />
 
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/signup" className="text-caption font-medium text-ink underline">
+        {/* v6: 가운데 정렬 + 세로 구분선 */}
+        <div className="flex items-center justify-center gap-6">
+          <Link href="/signup" className="text-caption font-semibold text-ink-soft underline">
             회원가입
           </Link>
+          <span aria-hidden className="h-4 w-px bg-line-strong" />
           {/* 비밀번호 찾기는 백엔드 API 가 없다 — 모양만 두고 비활성 */}
           <button
             type="button"
             disabled
             title="준비 중이에요"
-            className="text-caption font-medium text-ink underline disabled:opacity-40"
+            className="text-caption font-semibold text-ink-soft underline disabled:opacity-60"
           >
             비밀번호를 잊으셨나요?
           </button>
@@ -26,7 +28,7 @@ export default function LoginPage() {
 
         <SocialButtons />
 
-        <p className="pt-2 text-center text-caption text-ink-soft">
+        <p className="pt-2 text-center text-[11px] text-ink-soft opacity-70">
           이용약관 및 개인정보 처리방침
         </p>
       </Stack>

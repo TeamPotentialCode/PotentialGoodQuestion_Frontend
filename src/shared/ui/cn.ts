@@ -7,8 +7,8 @@ import { extendTailwindMerge } from 'tailwind-merge';
  * 뒤에 온 클래스가 앞의 것을 지운다 — 크기를 줬는데 색만 남는 식으로.
  * 토큰을 추가하면 여기에도 등록한다. 이름은 tokens.css 의 @theme inline 과 맞춘다.
  */
-const FONT_SIZES = ['caption', 'body', 'bubble', 'title', 'display'];
-const TEXT_COLORS = ['ink', 'ink-soft', 'cta-ink', 'danger', 'done'];
+const FONT_SIZES = ['caption', 'body', 'bubble', 'title', 'display', 'hero'];
+const TEXT_COLORS = ['ink', 'ink-soft', 'ink-faint', 'cta-ink', 'danger', 'done', 'accent', 'tab-active', 'tab-inactive'];
 const SPACINGS = ['touch', 'touch-lg', 'record'];
 
 const twMerge = extendTailwindMerge({

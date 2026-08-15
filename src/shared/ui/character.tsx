@@ -61,10 +61,9 @@ export function Character({
             alt=""
             className={cn('size-full object-cover', round ? 'rounded-full' : 'rounded-card')}
           />
-        ) : round ? (
-          <Icon name="person" className="size-1/2 text-ink-soft" />
         ) : (
-          <span className="text-title text-ink-soft">{name}</span>
+          // v6: 이미지가 없으면 모양과 무관하게 사람 아이콘 자리표시
+          <Icon name="person" className="size-1/2 text-ink-faint" />
         )}
         {state === 'speaking' && (
           <span className="absolute bottom-[22%] left-1/2 size-3 -translate-x-1/2 animate-pulse rounded-full bg-ink-soft" />

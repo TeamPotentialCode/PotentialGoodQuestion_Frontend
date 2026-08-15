@@ -75,36 +75,35 @@ export default function HomePage() {
         ) : (
           <>
             <Stack gap="sm">
-              <h1 className="text-display font-bold text-ink">
+              <h1 className="text-hero font-extrabold text-ink">
                 {child.selected?.name}아, 오늘은 어떤 이야기를 만나볼까?
               </h1>
-              <p className="text-body text-ink-soft">캐릭터와 이야기하며 네 생각을 들려줘.</p>
+              <p className="text-bubble text-ink-soft">캐릭터와 이야기하며 네 생각을 들려줘.</p>
             </Stack>
 
-            <section aria-label="이어서 이야기하기" className="flex flex-col gap-3">
-              <h2 className="text-title font-bold text-ink">이어서 이야기하기</h2>
-              {home.isPending && <p className="text-body text-ink-soft">불러오는 중…</p>}
-              {home.isError && (
-                <p role="alert" className="text-body text-ink">
-                  홈 정보를 불러오지 못했어요.
-                </p>
-              )}
-              {home.data &&
-                (cont ? (
-                  <ContinueCard
-                    session={cont}
-                    estimatedMinutes={estimatedMinutes}
-                    progress={progress}
-                  />
-                ) : (
-                  <p className="text-body text-ink-soft">진행 중인 이야기가 없어요.</p>
-                ))}
-            </section>
+            {home.isPending && <p className="text-body text-ink-soft">불러오는 중…</p>}
+            {home.isError && (
+              <p role="alert" className="text-body text-ink">
+                홈 정보를 불러오지 못했어요.
+              </p>
+            )}
 
-            <section aria-label="오늘의 추천 이야기" className="flex flex-col gap-3">
-              <h2 className="text-title font-bold text-ink">오늘의 추천 이야기</h2>
+            {/* 진행 중인 이야기가 없으면 시안대로 구획째 사라진다 (HOME-01 empty) */}
+            {cont && (
+              <section aria-label="이어서 이야기하기" className="flex flex-col gap-4">
+                <h2 className="text-display font-extrabold text-ink">이어서 이야기하기</h2>
+                <ContinueCard
+                  session={cont}
+                  estimatedMinutes={estimatedMinutes}
+                  progress={progress}
+                />
+              </section>
+            )}
+
+            <section aria-label="오늘의 추천 이야기" className="flex flex-col gap-4">
+              <h2 className="text-display font-extrabold text-ink">오늘의 추천 이야기</h2>
               {home.data && (
-                <CardRow variant="grid">
+                <CardRow variant="grid" className="gap-6">
                   {home.data.recommendedStories.map((story) => (
                     <HomeStoryCard key={story.storyId} story={story} />
                   ))}

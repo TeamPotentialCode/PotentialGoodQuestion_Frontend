@@ -20,7 +20,13 @@ type IconName =
   | 'chat'
   | 'refresh'
   | 'bookmark'
-  | 'clock';
+  | 'clock'
+  | 'smile'
+  | 'plus'
+  | 'camera'
+  | 'calendar'
+  | 'pencil'
+  | 'chevron-right';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;
@@ -142,4 +148,27 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="m9 9 6 6M15 9l-6 6" />
     </>
   ),
+  // 아이 아바타 자리 표시 (CHILD-01)
+  smile: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9 10h.01M15 10h.01" />
+      <path d="M8.5 14a4.5 4.5 0 0 0 7 0" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  camera: (
+    <>
+      <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    </>
+  ),
+  pencil: <path d="m4 20 1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1z" />,
+  'chevron-right': <path d="m9 6 6 6-6 6" />,
 };

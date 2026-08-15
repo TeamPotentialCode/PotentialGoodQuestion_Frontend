@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import type { Child } from '@/core/api/types';
@@ -14,7 +13,7 @@ import {
 } from '@/features/child-profile/consent-copy';
 import { childErrorMessage } from '@/features/child-profile/error-message';
 import { formatBirthDate } from '@/features/child-profile/schema';
-import { Icon, Screen, Stack, TouchTarget } from '@/shared/ui';
+import { Icon, Screen, Stack, SubHeader, TouchTarget } from '@/shared/ui';
 
 /**
  * 보호자 동의 — 아이 등록 바로 다음 단계.
@@ -49,49 +48,54 @@ export function ConsentScreen({ child }: { child: Child }) {
 
   return (
     <Screen scrollable className="py-6" data-testid="child-consent">
-      <Stack gap="lg" className="mx-auto w-full max-w-5xl">
-        <Stack direction="row" align="center" gap="md" className="border-b border-line pb-3">
-          <Link
-            href="/children"
-            className="flex min-h-touch items-center gap-1 text-body text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
-          >
-            <Icon name="back" className="size-5" />
-            뒤로
-          </Link>
-          <h1 className="flex-1 text-center text-body font-semibold text-ink">보호자 동의</h1>
-          <span aria-hidden className="min-w-16" />
-        </Stack>
+      <SubHeader title="보호자 동의" backHref="/children" />
 
-        <div className="mx-auto w-full max-w-lg rounded-card border border-line bg-surface p-8">
+      <Stack gap="lg" className="mx-auto w-full max-w-5xl pt-16">
+        <div className="mx-auto w-full max-w-[460px] rounded-card border border-line bg-white p-8">
           <Stack gap="lg">
-            <h2 className="text-title font-semibold text-ink">보호자 동의가 필요해요</h2>
-
             <Stack gap="sm">
-              <p className="text-caption text-ink-soft">등록할 아동 정보</p>
-              <p className="rounded-card bg-surface-raised px-4 py-3 text-body text-ink">
+              <h2 className="text-display font-extrabold text-ink">보호자 동의가 필요해요</h2>
+              <p className="text-body text-ink-soft">
+                굿퀘스천 이용을 위해 아동 개인정보 수집·이용에 대한 보호자 동의가 필요해요.
+              </p>
+            </Stack>
+
+            <Stack gap="sm" className="rounded-control bg-surface-raised px-4 py-3">
+              <p className="text-caption text-ink-faint">등록할 아동 정보</p>
+              <p className="flex items-center gap-2 text-bubble font-bold text-ink">
+                <span
+                  aria-hidden
+                  className="flex size-7 items-center justify-center rounded-full bg-line text-ink-soft"
+                >
+                  <Icon name="smile" className="size-4" />
+                </span>
                 {child.name} · {birth} ({child.age}세)
               </p>
             </Stack>
 
-            <Stack direction="row" align="center" justify="between" gap="md">
-              <label className="flex flex-1 items-center gap-3 text-body text-ink">
+            <div className="rounded-cta border border-line-strong p-4">
+              <label className="flex items-start gap-3 text-body text-ink">
                 <input
                   type="checkbox"
                   checked={agreed}
                   onChange={(event) => setAgreed(event.currentTarget.checked)}
-                  className="size-6 shrink-0 accent-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+                  className="mt-0.5 size-5 shrink-0 accent-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
                 />
-                아동 개인정보 수집·이용 동의 (필수)
+                <span className="flex flex-col gap-1">
+                  <span className="font-bold">아동 개인정보 수집·이용 동의 (필수)</span>
+                  <span className="text-ink-soft">
+                    서비스 이용 및 활동 기록 저장을 위해 필요한 정보예요.
+                  </span>
+                </span>
               </label>
-              <TouchTarget
-                size="sm"
-                look="ghost"
-                className="text-ink-soft"
+              <button
+                type="button"
                 onClick={() => setDetailOpen(true)}
+                className="mt-2 ml-8 min-h-touch text-caption font-semibold text-ink underline"
               >
-                자세히 보기 ›
-              </TouchTarget>
-            </Stack>
+                자세히 보기 &gt;
+              </button>
+            </div>
 
             {consent.isError && (
               <p role="alert" className="text-body text-ink">
@@ -127,7 +131,7 @@ function ConsentDetail({ onClose }: { onClose: () => void }) {
       aria-label="아동 개인정보 수집·이용 안내"
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
     >
-      <div className="max-h-[80dvh] w-full max-w-lg overflow-y-auto rounded-card bg-surface p-6">
+      <div className="max-h-[80dvh] w-full max-w-lg overflow-y-auto rounded-card bg-white p-6">
         <Stack gap="lg">
           <Stack direction="row" align="center" justify="between" gap="md">
             <h2 className="text-title font-semibold text-ink">아동 개인정보 수집·이용 안내</h2>

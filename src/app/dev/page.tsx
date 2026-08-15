@@ -196,7 +196,7 @@ function DevConsole() {
         <Stack direction="row" gap="md" align="center">
           <TouchTarget>보내기 (48px)</TouchTarget>
           <TouchTarget size="lg" look="outline">
-            다시 말하기 (56px)
+            다시 말하기 (52px)
           </TouchTarget>
           <TouchTarget size="record" aria-label="말하기">
             🎤

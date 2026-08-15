@@ -6,7 +6,7 @@ import { useRequireAuth } from '@/features/auth/use-session';
 import { AppHeader } from '@/features/child-profile/app-header';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getWords } from '@/features/wordbook/api';
-import { Icon, ImageSlot, Screen, Stack, TabBar, TouchTarget } from '@/shared/ui';
+import { Icon, Screen, Stack, TabBar, TouchTarget } from '@/shared/ui';
 
 /**
  * 단어장.
@@ -40,18 +40,25 @@ export default function WordsPage() {
       <Stack gap="lg" className="mx-auto w-full max-w-5xl">
         <AppHeader
           title="단어장"
-          icon="book"
           list={child.list}
           selected={child.selected}
           onSelect={child.select}
         />
 
         {list.length === 0 ? (
-          <Stack gap="md" align="center" className="py-16">
-            <ImageSlot label="Vocabulary Empty Illustration" className="w-64" />
+          <Stack gap="lg" align="center" className="py-16">
+            <div
+              aria-hidden
+              className="flex h-40 w-52 flex-col items-center justify-center gap-3 rounded-control border border-dashed border-line-strong bg-surface-raised text-ink-faint"
+            >
+              <span className="flex size-12 items-center justify-center rounded-full bg-white">
+                <Icon name="close" className="size-6" />
+              </span>
+              <span className="text-caption">Vocabulary Empty Illustration</span>
+            </div>
             <Stack gap="sm" align="center">
-              <p className="text-title font-semibold text-ink">아직 모은 단어가 없어요!</p>
-              <p className="text-caption text-ink-soft">
+              <p className="text-display font-extrabold text-ink">아직 모은 단어가 없어요!</p>
+              <p className="text-bubble text-ink-soft">
                 이야기를 하다 만난 단어를 여기에서 다시 볼 수 있어요.
               </p>
             </Stack>
@@ -64,7 +71,7 @@ export default function WordsPage() {
             {list.map((word) => (
               <li
                 key={word.wordId}
-                className="flex items-start gap-3 rounded-card border border-line bg-surface px-4 py-3"
+                className="flex items-start gap-3 rounded-card border border-line bg-white px-4 py-3"
               >
                 <Icon name="bookmark" className="mt-1 size-5 text-ink-soft" />
                 <Stack gap="sm">

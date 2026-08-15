@@ -50,7 +50,7 @@ export function LoginForm() {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="parent@example.com"
+          placeholder="example@email.com"
           error={fieldErrors.email}
           invalid={serverFailed}
         />
@@ -59,6 +59,7 @@ export function LoginForm() {
           name="password"
           type="password"
           autoComplete="current-password"
+          placeholder="비밀번호를 입력해 주세요"
           error={fieldErrors.password}
           invalid={serverFailed}
         />

@@ -78,9 +78,9 @@ export function ChildForm({ child, onDone, onLimitReached }: ChildFormProps) {
             aria-hidden
             className="flex size-20 items-center justify-center rounded-full bg-surface-raised text-ink-soft"
           >
-            <Icon name="image" className="size-8" />
+            <Icon name="camera" className="size-8" />
           </span>
-          <p className="text-caption text-ink-soft">사진은 나중에 추가할 수 있어요</p>
+          <p className="text-caption text-ink-faint">사진은 나중에 추가할 수 있어요</p>
         </Stack>
 
         <Field
@@ -98,7 +98,7 @@ export function ChildForm({ child, onDone, onLimitReached }: ChildFormProps) {
           type="date"
           defaultValue={defaultBirthDate}
           error={fieldErrors.birthDate}
-          hint="아이에게 맞는 이야기와 문구를 보여 주는 데 사용돼요."
+          hint="아이에게 맞는 이야기와 활동을 제공하는 데 사용해요."
         />
 
         {mutation.isError && (

@@ -18,20 +18,21 @@ const target = cva(
     'inline-flex select-none items-center justify-center font-semibold',
     'touch-manipulation duration-(--motion-fast) active:scale-95',
     'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
-    'disabled:pointer-events-none disabled:opacity-40',
+    'disabled:pointer-events-none',
   ],
   {
     variants: {
       size: {
-        sm: 'min-h-touch gap-2 rounded-card text-caption font-normal',
-        md: 'min-h-touch min-w-touch rounded-card px-6 text-body',
-        lg: 'min-h-touch-lg min-w-touch-lg rounded-card px-8 text-body',
+        sm: 'min-h-touch gap-2 rounded-control text-caption font-normal',
+        md: 'min-h-touch min-w-touch rounded-cta px-6 text-body',
+        lg: 'min-h-touch-lg min-w-touch-lg rounded-cta px-7 text-bubble font-bold',
         record: 'size-record rounded-full text-title',
       },
       look: {
-        solid: 'bg-cta text-cta-ink',
-        ghost: 'bg-transparent text-ink',
-        outline: 'border-2 border-line bg-transparent text-ink',
+        // 비활성은 시안대로 연회색 판 + 회색 글자 (어두운 판을 흐리게 하지 않는다)
+        solid: 'bg-cta text-cta-ink disabled:bg-line disabled:text-ink-faint',
+        ghost: 'bg-transparent text-ink disabled:opacity-40',
+        outline: 'border border-line-strong bg-white text-ink disabled:opacity-40',
       },
     },
     defaultVariants: { size: 'md', look: 'solid' },

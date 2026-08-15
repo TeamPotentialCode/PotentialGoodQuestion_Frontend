@@ -387,6 +387,7 @@ export function usePlaySession(sessionId: number) {
     scene,
     narrationPage,
     characterLine,
+    childName,
     turnLog,
     micLevel,
     session,

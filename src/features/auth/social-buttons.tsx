@@ -27,11 +27,11 @@ export function SocialButtons() {
           type="button"
           disabled
           title="준비 중이에요"
-          className="flex min-h-touch w-full items-center justify-center gap-2 rounded-card border-2 border-line bg-surface text-body font-semibold text-ink disabled:opacity-40"
+          className="flex min-h-touch w-full items-center justify-center gap-2 rounded-control border border-line-strong bg-white text-body font-semibold text-ink disabled:opacity-60"
         >
           <span
             aria-hidden
-            className="flex size-6 items-center justify-center rounded bg-surface-raised text-caption"
+            className="flex size-5 items-center justify-center rounded border border-line-strong bg-surface-raised text-[10px] font-extrabold text-ink-soft"
           >
             {p.mark}
           </span>

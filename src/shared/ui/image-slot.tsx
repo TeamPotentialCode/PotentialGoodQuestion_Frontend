@@ -8,8 +8,8 @@ interface ImageSlotProps {
   /** 이미지가 아직 없을 때 자리에 적는 설명 */
   label: string;
   src?: string | null;
-  /** thumb 은 목록·카드 안에 들어가는 작은 자리 */
-  size?: 'full' | 'thumb';
+  /** thumb 은 목록·카드 안의 작은 자리, bare 는 치수를 호출부 className 이 전부 정한다 */
+  size?: 'full' | 'thumb' | 'bare';
   className?: string;
 }
 
@@ -25,7 +25,8 @@ export function ImageSlot({ label, src = null, size = 'full', className }: Image
     <div
       className={cn(
         'flex items-center justify-center overflow-hidden rounded-card border border-line bg-surface',
-        size === 'full' ? 'min-h-40 md:min-h-80' : 'min-h-24 w-32 shrink-0 md:min-h-28 md:w-40',
+        size === 'full' && 'min-h-40 md:min-h-80',
+        size === 'thumb' && 'min-h-24 w-32 shrink-0 md:min-h-28 md:w-40',
         className,
       )}
     >

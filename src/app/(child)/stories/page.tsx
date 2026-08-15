@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useRequireAuth } from '@/features/auth/use-session';
+import { AppHeader } from '@/features/child-profile/app-header';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
 import { getStories } from '@/features/story/api';
 import { StoryCard, StoryPlaceholderCard } from '@/features/story/story-card';
@@ -42,22 +43,18 @@ export default function StoriesPage() {
   }
 
   return (
-    <Screen scrollable className="py-8" data-testid="story-list">
+    <Screen scrollable className="py-6" data-testid="story-list">
       <Stack gap="lg" className="mx-auto w-full max-w-5xl">
-        <Stack direction="row" align="start" justify="between" gap="md">
-          <Stack gap="sm">
-            <h1 className="text-display font-bold text-ink">이야기</h1>
-            <p className="text-caption text-ink-soft">어떤 이야기를 만나볼까?</p>
-          </Stack>
-          {child.selected && (
-            <span className="flex items-center gap-2 text-body text-ink">
-              <span aria-hidden className="size-8 rounded-full bg-surface-raised" />
-              {child.selected.name}
-            </span>
-          )}
-        </Stack>
+        <AppHeader
+          list={child.list}
+          selected={child.selected}
+          onSelect={child.select}
+          title="이야기"
+        />
 
-        <ul className="flex flex-wrap gap-2" aria-label="주제 필터">
+        <h2 className="text-title font-bold text-ink">어떤 이야기를 만나볼까?</h2>
+
+        <ul className="flex flex-wrap gap-3" aria-label="주제 필터">
           {[ALL, ...topics].map((name) => (
             <li key={name}>
               <button
@@ -65,11 +62,11 @@ export default function StoriesPage() {
                 aria-pressed={topic === name}
                 onClick={() => setTopic(name)}
                 className={cn(
-                  'min-h-touch rounded-full border px-5 text-body',
+                  'min-h-touch rounded-control border px-4 text-body font-semibold',
                   'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
                   topic === name
                     ? 'border-cta bg-cta text-cta-ink'
-                    : 'border-line bg-surface text-ink',
+                    : 'border-line-strong bg-white text-ink',
                 )}
               >
                 {name}
@@ -99,7 +96,7 @@ export default function StoriesPage() {
               <p className="text-caption text-ink-soft">다른 주제를 골라 볼까?</p>
             </Stack>
           ) : (
-            <CardRow variant="grid">
+            <CardRow variant="grid" className="gap-6">
               {stories.data.map((story) => (
                 <StoryCard key={story.storyId} story={story} />
               ))}

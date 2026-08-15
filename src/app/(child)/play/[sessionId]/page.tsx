@@ -68,7 +68,7 @@ export default function PlayPage() {
     // 캐릭터 대사는 LLM 이 생성해 매번 달라지므로 텍스트로 단언하지 않는다
     <Screen
       scrollable
-      className="py-4"
+      className="bg-white py-4"
       data-testid="play-stage"
       data-state={state.phase.tag}
       // 내레이션 몇 번째 장인지 — E2E 가 "다음"이 실제로 먹혔는지 기다리는 데 쓴다
@@ -99,6 +99,7 @@ export default function PlayPage() {
           <PlayStage
             phase={state.phase}
             characterName={scene?.characterName ?? ''}
+            childName={play.childName}
             sceneDescription={scene?.sceneDescription ?? ''}
             dialogueIndex={scene?.dialogueIndex ?? null}
             imageUrl={
@@ -110,7 +111,6 @@ export default function PlayPage() {
             characterLine={characterLine}
             transcript={state.transcript?.text ?? null}
             micLevel={play.micLevel}
-            turnLog={play.turnLog}
             onAction={dispatch}
             onReplayScene={play.replaySceneDescription}
             onReplayLine={play.replayCharacterLine}

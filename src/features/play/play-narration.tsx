@@ -1,7 +1,8 @@
 'use client';
 
 import type { NarrationPage } from '@/features/play/scene-source';
-import { cn, Icon, ImageSlot, Stack, TouchTarget } from '@/shared/ui';
+import { SceneColumn } from '@/features/play/scene-column';
+import { cn, Stack, TouchTarget, TwoPane } from '@/shared/ui';
 
 interface PlayNarrationProps {
   page: NarrationPage;
@@ -11,47 +12,48 @@ interface PlayNarrationProps {
   onNext: () => void;
 }
 
-// 큰 삽화 + 내레이션 한 문장 + 점 인디케이터 + "다음"
+// v6 scene-story: 좌측 삽화 + 낭독 패널, 우측은 안내 문구가 가운데, 바닥에 점 인디케이터 + "다음"
 export function PlayNarration({ page, total, onReplay, onNext }: PlayNarrationProps) {
   return (
-    <Stack gap="md">
-      <ImageSlot src={page.imageUrl} label={`장면 ${page.narrationIndex} 삽화`} />
+    <TwoPane
+      rightFill
+      left={
+        <SceneColumn
+          imageUrl={page.imageUrl}
+          imageLabel={`장면 ${page.narrationIndex} 삽화`}
+          text={page.text}
+          onReplay={onReplay}
+          replayLabel="내레이션 다시 듣기"
+        />
+      }
+      right={
+        <div className="flex h-full w-full flex-col">
+          <Stack gap="sm" align="center" className="my-auto py-16">
+            <p className="text-title font-bold text-ink" aria-live="polite">
+              이야기를 듣고 있어요
+            </p>
+            <p className="text-bubble text-ink-soft">이야기가 끝난 뒤에 질문에 대답해 보아요.</p>
+          </Stack>
 
-      <div className="rounded-card bg-surface-raised px-5 py-4">
-        <p className="flex items-start gap-3 text-body font-semibold text-ink">
-          <Icon name="wave" className="mt-1" />
-          {/* 원문 내레이션은 여러 줄로 온다 — 줄바꿈을 살린다 */}
-          <span className="whitespace-pre-line">{page.text}</span>
-        </p>
-        <TouchTarget
-          size="sm"
-          look="ghost"
-          aria-label="내레이션 다시 듣기"
-          onClick={onReplay}
-          className="mt-1 text-ink-soft"
-        >
-          <Icon name="speaker" className="size-4" />
-          다시 듣기
-        </TouchTarget>
-      </div>
+          <Stack direction="row" align="center" justify="between" gap="md">
+            <span className="flex gap-2" role="presentation">
+              {Array.from({ length: total }, (_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'size-2.5 rounded-full',
+                    i + 1 === page.narrationIndex ? 'bg-ink' : 'bg-line',
+                  )}
+                />
+              ))}
+            </span>
 
-      <Stack direction="row" align="center" justify="between" gap="md">
-        <span className="flex gap-2" role="presentation">
-          {Array.from({ length: total }, (_, i) => (
-            <span
-              key={i}
-              className={cn(
-                'size-2.5 rounded-full',
-                i + 1 === page.narrationIndex ? 'bg-ink' : 'bg-line',
-              )}
-            />
-          ))}
-        </span>
-
-        <TouchTarget size="lg" onClick={onNext}>
-          다음 →
-        </TouchTarget>
-      </Stack>
-    </Stack>
+            <TouchTarget size="lg" onClick={onNext}>
+              다음 →
+            </TouchTarget>
+          </Stack>
+        </div>
+      }
+    />
   );
 }

@@ -15,7 +15,7 @@ interface AuthCardProps {
 export function AuthCard({ title, subtitle, children, className }: AuthCardProps) {
   return (
     // 바깥 가운데 정렬은 (auth)/layout 이 한다 — 여기서 또 하면 높이가 두 배로 잡힌다
-    <div className={cn('w-full rounded-card bg-surface p-8 shadow-sm', className)}>
+    <div className={cn('w-full rounded-card border border-line bg-white p-8 shadow-sm', className)}>
       <div className="flex flex-col items-center gap-2 pb-6">
         <span
           aria-hidden

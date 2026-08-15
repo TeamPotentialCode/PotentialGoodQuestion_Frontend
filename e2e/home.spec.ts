@@ -43,10 +43,9 @@ test('아이가 없으면 등록 안내만 보이고 이야기 영역은 그리�
 test('아이가 있으면 이어하기 없음과 추천 이야기를 보여준다', async ({ page }) => {
   await startFresh(page);
 
-  await expect(page.getByRole('heading', { name: '이어서 이야기하기' })).toBeVisible();
-  await expect(page.getByText('진행 중인 이야기가 없어요.')).toBeVisible();
-
+  // v6: 진행 중인 이야기가 없으면 이어하기 구획째 사라진다
   await expect(page.getByRole('heading', { name: '오늘의 추천 이야기' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '이어서 이야기하기' })).toBeHidden();
   await expect(page.getByRole('listitem').filter({ hasText: '방귀 뀌는 며느리' })).toBeVisible();
   // 시안: 뱃지 + 소요 시간이 한 줄, 주제는 점으로 이어 쓴다
   await expect(page.getByText('시작 가능')).toBeVisible();
@@ -74,8 +73,8 @@ test('진행 중 세션이 있으면 이어하기 카드가 뜬다', async ({ pa
   // 목 세션은 저장소에 남으므로 새로고침해도 살아 있다 — 이걸로 확실히 다시 읽힌다
   await page.reload();
 
-  await expect(page.getByText('진행 중인 이야기가 없어요.')).toBeHidden();
   // 시안의 이어하기 카드 — 제목·진행도·이어서 하기
+  await expect(page.getByRole('heading', { name: '이어서 이야기하기' })).toBeVisible();
   await expect(page.getByRole('link', { name: '이어서 하기' })).toBeVisible();
   await expect(page.getByText(/장면 1 \/ 4/)).toBeVisible();
 });

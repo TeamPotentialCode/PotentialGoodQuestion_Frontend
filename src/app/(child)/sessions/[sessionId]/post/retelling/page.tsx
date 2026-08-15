@@ -168,13 +168,17 @@ export default function PostRetellingPage() {
   return (
     <Screen scrollable className="py-4" data-testid="post-retelling" data-step={step}>
       <Stack gap="lg" className="mx-auto w-full max-w-5xl">
-        <ActivityHeader title="이야기 다시 말하기" step="2 / 2" />
+        <ActivityHeader
+          title="이야기 다시 말하기"
+          step="2 / 2"
+          storyTitle={session.data?.storyTitle}
+        />
 
-        <Stack gap="sm" align="center">
-          <h2 className="text-title font-semibold text-ink">
+        <Stack gap="sm" align="center" className="pt-2">
+          <h2 className="text-[26px] font-extrabold text-ink">
             이번에는 네가 이야기를 들려줄 차례야!
           </h2>
-          <p className="text-caption text-ink-soft">장면과 단어를 보면서 처음부터 이야기해 봐.</p>
+          <p className="text-bubble text-ink-soft">장면과 단어를 보면서 처음부터 이야기해 봐.</p>
         </Stack>
 
         <TwoPane
@@ -190,19 +194,19 @@ export default function PostRetellingPage() {
                   return (
                     <li
                       key={card.id}
-                      className="flex flex-col items-center gap-2 rounded-card border border-line bg-surface p-3"
+                      className="flex flex-col items-center gap-2 rounded-card border border-line bg-white p-3"
                     >
                       {image ? (
-                        <span className="w-full overflow-hidden rounded-card bg-surface-raised">
+                        <span className="w-full overflow-hidden rounded-control bg-surface-raised">
                           {/* eslint-disable-next-line @next/next/no-img-element -- 프로젝트 정적 삽화 */}
                           <img src={image} alt="" className="size-full min-h-20 object-cover" />
                         </span>
                       ) : (
-                        <span className="flex w-full items-center justify-center rounded-card bg-surface-raised py-5 text-ink-soft">
+                        <span className="flex w-full items-center justify-center rounded-control bg-surface-raised py-5 text-ink-soft">
                           <Icon name="image" className="size-6" />
                         </span>
                       )}
-                      <span className="flex size-6 items-center justify-center rounded-full bg-surface-raised text-caption text-ink">
+                      <span className="flex size-6 items-center justify-center rounded-[4px] bg-surface-raised text-caption text-ink">
                         {i + 1}
                       </span>
                     </li>
@@ -216,7 +220,7 @@ export default function PostRetellingPage() {
                   {handoff.retellingKeywords.map((word) => (
                     <span
                       key={word}
-                      className="rounded-full bg-surface-raised px-4 py-1.5 text-caption text-ink"
+                      className="rounded-[6px] border border-line bg-surface-raised px-3 py-1.5 text-caption text-ink"
                     >
                       {word}
                     </span>
@@ -266,8 +270,8 @@ export default function PostRetellingPage() {
 
               {/* 시안: 결과 칸은 처음부터 자리를 잡고 있고, 말하기 전에는 안내 문구가 들어 있다 */}
               <Stack gap="sm" className="w-full">
-                <p className="text-caption text-ink-soft">내가 이렇게 말했어요</p>
-                <p className="min-h-40 w-full rounded-card bg-surface-raised px-5 py-4 text-body">
+                <p className="text-body font-semibold text-ink">내가 이렇게 말했어요</p>
+                <p className="min-h-40 w-full rounded-cta bg-surface-raised px-5 py-4 text-body">
                   {said ? (
                     <span className="text-ink">{said}</span>
                   ) : (

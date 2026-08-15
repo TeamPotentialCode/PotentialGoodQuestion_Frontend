@@ -29,7 +29,7 @@ test('홈 하단 탭에서 이야기로 이동한다', async ({ page }) => {
   await expect(tabs(page)).toBeVisible();
   await tabs(page).getByRole('link', { name: '이야기' }).click();
   await page.waitForURL('**/stories');
-  await expect(page.getByRole('heading', { name: '이야기' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '이야기', exact: true })).toBeVisible();
 });
 
 test('탭 4개가 모두 열려 있고 현재 위치를 표시한다', async ({ page }) => {
@@ -50,11 +50,10 @@ test('탭 4개가 모두 열려 있고 현재 위치를 표시한다', async ({ 
   await expect(page.getByText('아직 모은 단어가 없어요!')).toBeVisible();
   await expect(page.getByRole('link', { name: '이야기 보러 가기' })).toBeVisible();
 
-  // 마이페이지 → 성장 레이더 + 내 활동 기록
+  // 마이페이지 → 프로필 카드 + 내 활동 기록 (v6 — 성장 레이더는 시안에 없어 화면에서 뺐다)
   await tabs(page).getByRole('link', { name: '마이페이지' }).click();
   await page.waitForURL('**/me');
-  await expect(page.getByText('생각이 자라고 있어요')).toBeVisible();
-  await expect(page.getByRole('img', { name: /사고 요소 성장 그래프/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: '아이 정보 수정' })).toBeVisible();
   await expect(page.getByRole('link', { name: /내 활동 기록/ })).toBeVisible();
   await page.getByRole('link', { name: /내 활동 기록/ }).click();
   await page.waitForURL('**/me/history');

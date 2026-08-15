@@ -116,11 +116,15 @@ export default function PostOrderPage() {
   return (
     <Screen scrollable className="py-4" data-testid="post-order">
       <Stack gap="lg" className="mx-auto w-full max-w-5xl">
-        <ActivityHeader title="이야기 돌아보기" step="1 / 2" />
+        <ActivityHeader
+          title="이야기 돌아보기"
+          step="1 / 2"
+          storyTitle={session.data?.storyTitle}
+        />
 
-        <Stack gap="sm" align="center">
-          <h2 className="text-title font-semibold text-ink">이야기를 순서대로 놓아 볼까?</h2>
-          <p className="text-caption text-ink-soft">처음부터 마지막까지 차례대로 놓아 주세요.</p>
+        <Stack gap="sm" align="center" className="pt-2">
+          <h2 className="text-[26px] font-extrabold text-ink">이야기를 순서대로 놓아 볼까?</h2>
+          <p className="text-bubble text-ink-soft">처음부터 마지막까지 차례대로 놓아 주세요.</p>
         </Stack>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

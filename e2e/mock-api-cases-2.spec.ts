@@ -285,8 +285,9 @@ test('터치 타겟 실측: 일반 48px 이상, 녹음 CTA 72px 이상', async (
   expect(send).not.toBeNull();
   expect(send!.height).toBeGreaterThanOrEqual(48);
 
-  const rerecord = await page.getByRole('button', { name: '다시 말하기 (56px)' }).boundingBox();
-  expect(rerecord!.height).toBeGreaterThanOrEqual(56);
+  // 주요 CTA — v6 실측 52px (PRD 최소 48px 을 넘는다)
+  const rerecord = await page.getByRole('button', { name: '다시 말하기 (52px)' }).boundingBox();
+  expect(rerecord!.height).toBeGreaterThanOrEqual(52);
 
   const record = await page.getByRole('button', { name: '말하기', exact: true }).boundingBox();
   expect(record!.height).toBeGreaterThanOrEqual(72); // PRD 녹음 CTA 요건

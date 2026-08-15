@@ -1,0 +1,80 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { clearTokens } from '@/core/api/auth-token';
+import type { Child } from '@/core/api/types';
+import { Icon } from '@/shared/ui';
+
+interface ChildChipProps {
+  list: Child[];
+  selected: Child | undefined;
+  onSelect: (childId: number) => void;
+}
+
+/**
+ * 우상단 아이 칩(아바타 + 이름 ▾) — 누르면 아이 전환·계정 메뉴가 열린다.
+ * AppHeader 와 이야기 소개(STORY-02) 상단 바가 같이 쓴다.
+ */
+export function ChildChip({ list, selected, onSelect }: ChildChipProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="flex h-10 items-center gap-2 rounded-full bg-surface-raised pr-3 pl-2 text-body font-bold text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+      >
+        <span aria-hidden className="size-7 rounded-full border border-line bg-line" />
+        {selected?.name ?? '아이 선택'}
+        <Icon name="chevron-down" className="size-4 text-ink-soft" strokeWidth={2.2} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-20 mt-2 w-56 rounded-card border border-line bg-white p-2 shadow-sm"
+        >
+          {list.map((child) => (
+            <button
+              key={child.childId}
+              type="button"
+              role="menuitemradio"
+              aria-checked={child.childId === selected?.childId}
+              onClick={() => {
+                onSelect(child.childId);
+                setOpen(false);
+              }}
+              className="flex min-h-touch w-full items-center justify-between rounded-control px-3 text-body text-ink hover:bg-surface-raised"
+            >
+              {child.name} · 만 {child.age}세
+              {child.childId === selected?.childId && <Icon name="check" className="size-5" />}
+            </button>
+          ))}
+
+          <Link
+            href="/children"
+            className="flex min-h-touch items-center rounded-control px-3 text-body text-ink hover:bg-surface-raised"
+          >
+            아이 관리
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              clearTokens();
+              router.replace('/login');
+            }}
+            className="flex min-h-touch w-full items-center rounded-control px-3 text-body text-ink-soft hover:bg-surface-raised"
+          >
+            로그아웃
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

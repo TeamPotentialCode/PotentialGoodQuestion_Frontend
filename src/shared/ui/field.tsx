@@ -30,7 +30,7 @@ export function Field({ label, error, hint, invalid, className, id, type, ...res
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-body font-medium text-ink">
+      <label htmlFor={inputId} className="text-body font-semibold text-ink">
         {label}
       </label>
       <div className="relative flex">
@@ -40,10 +40,11 @@ export function Field({ label, error, hint, invalid, className, id, type, ...res
           aria-invalid={wrong ? true : undefined}
           aria-describedby={error ? errorId : hint ? hintId : undefined}
           className={cn(
-            'min-h-touch w-full rounded-card border-2 bg-surface px-4 text-body text-ink',
+            // v6: 흰 배경 · 1px 진한 회색선 · 8px 반경
+            'min-h-touch w-full rounded-control border bg-white px-4 text-body text-ink',
             'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
             isPassword && 'pr-touch',
-            wrong ? 'border-danger' : 'border-line',
+            wrong ? 'border-danger' : 'border-line-strong',
             className,
           )}
           {...rest}

@@ -3,10 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRequireAuth } from '@/features/auth/use-session';
-import { AppHeader } from '@/features/child-profile/app-header';
+import { ChildChip } from '@/features/child-profile/child-chip';
 import { useSelectedChild } from '@/features/child-profile/use-selected-child';
+import { storyThumbnail } from '@/features/story/images';
 import { getGrowth } from '@/features/wordbook/api';
-import { CardRow, Icon, ImageSlot, Screen, Stack, TabBar } from '@/shared/ui';
+import { ImageSlot, Screen, Stack, SubHeader, TabBar } from '@/shared/ui';
 
 /**
  * 내 활동 기록 — 끝낸 이야기 목록.
@@ -34,28 +35,17 @@ export default function MyHistoryPage() {
 
   return (
     <Screen scrollable className="py-6" data-testid="my-history">
-      <Stack gap="lg" className="mx-auto w-full max-w-5xl">
-        <Stack direction="row" align="center" gap="md">
-          <Link
-            href="/me"
-            className="flex min-h-touch items-center gap-1 text-body text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
-          >
-            <Icon name="back" className="size-5" />
-            뒤로
-          </Link>
-          <div className="flex-1">
-            <AppHeader
-              title="내 활동 기록"
-              list={child.list}
-              selected={child.selected}
-              onSelect={child.select}
-            />
-          </div>
-        </Stack>
+      <SubHeader
+        title="내 활동 기록"
+        backHref="/me"
+        backLabel=""
+        right={<ChildChip list={child.list} selected={child.selected} onSelect={child.select} />}
+      />
 
+      <Stack gap="lg" className="mx-auto w-full max-w-5xl pt-8">
         <Stack gap="sm" align="center">
-          <h2 className="text-title font-semibold text-ink">내 활동 기록</h2>
-          <p className="text-caption text-ink-soft">내가 끝낸 이야기를 다시 볼 수 있어요.</p>
+          <h2 className="text-display font-extrabold text-ink">내 활동 기록</h2>
+          <p className="text-bubble text-ink-soft">내가 끝낸 이야기를 다시 볼 수 있어요.</p>
         </Stack>
 
         {done.length === 0 ? (
@@ -64,24 +54,36 @@ export default function MyHistoryPage() {
             <p className="text-caption text-ink-soft">이야기를 하나 끝내면 여기에 남아요.</p>
           </Stack>
         ) : (
-          <CardRow variant="grid">
+          <ul className="flex flex-wrap justify-center gap-6">
             {done.map((session) => (
-              <li key={session.sessionId} className="flex">
+              <li key={session.sessionId} className="flex w-80">
                 <Link
                   href={`/sessions/${session.sessionId}/complete`}
-                  className="flex w-full flex-col gap-3 rounded-card border border-line bg-surface p-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+                  className="flex w-full flex-col overflow-hidden rounded-card border border-line bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
                 >
-                  <ImageSlot label="Story Scene Image" />
-                  <Stack direction="row" align="center" justify="between" gap="sm">
-                    <span className="text-body font-semibold text-ink">{session.storyTitle}</span>
-                    <span className="rounded-full bg-done px-3 py-1 text-caption text-cta-ink">
+                  {/* recentSessions 에 storyId 가 없다 — 썸네일 매핑이 이야기 불문 동일해 0 으로 둔다 */}
+                  <ImageSlot
+                    src={storyThumbnail(0)}
+                    label="Story Scene Image"
+                    size="bare"
+                    className="h-44 w-full rounded-none border-0"
+                  />
+                  <Stack
+                    direction="row"
+                    align="center"
+                    justify="between"
+                    gap="sm"
+                    className="p-4"
+                  >
+                    <span className="text-bubble font-bold text-ink">{session.storyTitle}</span>
+                    <span className="rounded-full bg-done px-3 py-1 text-[12px] font-bold text-cta-ink">
                       완료
                     </span>
                   </Stack>
                 </Link>
               </li>
             ))}
-          </CardRow>
+          </ul>
         )}
       </Stack>
 
