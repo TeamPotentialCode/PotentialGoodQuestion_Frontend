@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { MISSION_COPY, type MissionType, type Phase, type PlayEvent } from '@/core/play-session/types';
+import type { MissionType } from '@/core/api/types';
+import { MISSION_COPY, type Phase, type PlayEvent } from '@/core/play-session/types';
 import { PlayControls } from '@/features/play/play-controls';
 import { SceneColumn } from '@/features/play/scene-column';
 import { missionImage } from '@/features/story/images';
