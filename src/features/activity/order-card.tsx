@@ -36,7 +36,7 @@ export function OrderCard({ card, slot, solved = false, imageUrl = null }: Order
   return (
     <li className="flex flex-col gap-2" data-card-id={card.id} data-slot={slot}>
       <span className="flex items-center gap-2 text-caption text-ink-soft">
-        <span className="flex size-6 items-center justify-center rounded-full bg-ink text-cta-ink">
+        <span className="flex size-6 items-center justify-center rounded-full bg-surface-subtle text-ink">
           {slot}
         </span>
         번째 자리
@@ -74,14 +74,14 @@ export function OrderCard({ card, slot, solved = false, imageUrl = null }: Order
             <img src={imageUrl} alt="" className="size-full min-h-24 object-cover" />
           </span>
         ) : (
-          <span className="flex w-full flex-1 items-center justify-center rounded-control bg-surface-raised py-6 text-ink-soft">
+          <span className="flex w-full flex-1 items-center justify-center rounded-control bg-surface-subtle py-6 text-ink-soft">
             <Icon name="image" className="size-8" />
           </span>
         )}
-        <span className="rounded-[6px] border border-line-strong bg-white px-2.5 py-1 text-center text-caption text-ink">
+        <span className="rounded-[6px] border border-line bg-surface-subtle px-2.5 py-1 text-center text-caption text-ink">
           {card.text}
         </span>
-        {!solved && <Icon name="grip" className="text-ink-soft" />}
+        {!solved && <Icon name="grip" className="text-ink-faint" />}
       </button>
     </li>
   );

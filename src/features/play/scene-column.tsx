@@ -28,8 +28,8 @@ export function SceneColumn({
       <ImageSlot src={imageUrl} label={imageLabel} className="bg-surface-raised" />
 
       {text && (
-        <div className="rounded-card bg-surface px-5 py-4">
-          <p className="flex items-center gap-2 text-caption font-bold text-accent">
+        <div className="rounded-card bg-surface-raised px-5 py-4">
+          <p className="flex items-center gap-2 text-caption font-bold text-cta">
             <Icon name="wave" className="size-4" />
             이야기 듣는 중
           </p>

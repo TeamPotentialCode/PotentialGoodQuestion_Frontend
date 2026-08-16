@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { MISSION_COPY, type Phase, type PlayEvent } from '@/core/play-session/types';
+import { MISSION_COPY, type MissionType, type Phase, type PlayEvent } from '@/core/play-session/types';
 import { PlayControls } from '@/features/play/play-controls';
 import { SceneColumn } from '@/features/play/scene-column';
 import { missionImage } from '@/features/story/images';
@@ -9,7 +9,6 @@ import {
   Character,
   cn,
   Icon,
-  ImageSlot,
   MicLevel,
   SpeechBubble,
   Stack,
@@ -65,6 +64,7 @@ export function PlayStage({
     transcript && (phase.tag === 'analyzing' || phase.tag === 'reviewing');
 
   return (
+    <>
     <TwoPane
       rightFill
       left={
@@ -115,7 +115,7 @@ export function PlayStage({
 
           {showTranscript && (
             <div className="flex w-full flex-col items-end gap-1 pl-14">
-              <p className="text-caption text-ink-faint">{childName || '나'} (나)</p>
+              <p className="text-caption text-ink-soft">{childName || '나'} (나)</p>
               <SpeechBubble speaker="child" className="w-full max-w-none">
                 “{transcript}”
               </SpeechBubble>
@@ -146,7 +146,7 @@ export function PlayStage({
               <StatusCard title="듣고 있어요!" hint="편하게 이야기해 줘.">
                 <span
                   aria-hidden
-                  className="flex size-16 items-center justify-center rounded-full border border-line-strong bg-white text-ink ring-4 ring-line"
+                  className="flex size-16 items-center justify-center rounded-full border-2 border-camera bg-white text-camera ring-4 ring-camera/30"
                 >
                   <Icon name="mic" className="size-7" />
                 </span>
@@ -185,30 +185,6 @@ export function PlayStage({
               </StatusCard>
             )}
 
-            {/*
-             * 미션 안내 — 결과를 제출하는 API 는 없다. 아이가 읽고 **말로 답하면**
-             * 그 발화가 utterances 로 흘러가 캐릭터 대화에 반영된다(MVP 문서 §4)
-             */}
-            {phase.tag === 'mission' && (
-              <StatusCard
-                title={MISSION_COPY[phase.missionType].title}
-                hint={MISSION_COPY[phase.missionType].body}
-                header={
-                  <ImageSlot
-                    src={missionImage(phase.missionType)}
-                    label="미션 그림"
-                    size="bare"
-                    className="h-40 w-full max-w-96 rounded-control"
-                  />
-                }
-              >
-                <p className="text-caption text-ink-soft">
-                  준비되면 아래를 눌러 줘. 네 차례가 시작돼!
-                </p>
-                <PlayControls phase={phase} onAction={onAction} />
-              </StatusCard>
-            )}
-
             {(phase.tag === 'error' || phase.tag === 'fatal') && (
               <StatusCard title="잠깐 문제가 생겼어요" hint="다시 한번 해 볼까?" tone="alert">
                 <p role="alert" className="text-caption text-ink-soft">
@@ -231,6 +207,51 @@ export function PlayStage({
         </div>
       }
     />
+    {phase.tag === 'mission' && (
+      <MissionModal missionType={phase.missionType} onAction={onAction} />
+    )}
+    </>
+  );
+}
+
+function MissionModal({
+  missionType,
+  onAction,
+}: {
+  missionType: MissionType;
+  onAction: (event: PlayEvent) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40">
+      <div className="relative w-full max-w-lg rounded-card bg-surface-raised px-8 py-8 shadow-lg">
+        <button
+          type="button"
+          aria-label="미션 닫기"
+          onClick={() => onAction({ type: 'MISSION_DISMISSED' })}
+          className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full text-ink-soft hover:bg-surface-subtle"
+        >
+          <Icon name="close" className="size-5" />
+        </button>
+        <Stack gap="md" align="center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={missionImage(missionType)}
+            alt="미션 그림"
+            className="w-full rounded-control"
+          />
+          <p className="text-display font-extrabold text-ink">
+            {MISSION_COPY[missionType].title}
+          </p>
+          <p className="text-center text-bubble text-ink-soft">
+            {MISSION_COPY[missionType].body}
+          </p>
+          <p className="text-caption text-ink-soft">준비되면 아래를 눌러 줘. 네 차례가 시작돼!</p>
+          <TouchTarget size="lg" onClick={() => onAction({ type: 'MISSION_DISMISSED' })}>
+            알겠어! 말해 볼게
+          </TouchTarget>
+        </Stack>
+      </div>
+    </div>
   );
 }
 
@@ -258,13 +279,16 @@ function StatusCard({
         {tone === 'alert' && (
           <span
             aria-hidden
-            className="flex size-12 items-center justify-center rounded-full bg-white text-ink-soft"
+            className="flex size-12 items-center justify-center rounded-full bg-danger text-white"
           >
             <Icon name="refresh" className="size-6" />
           </span>
         )}
         {title && (
-          <p className="text-display font-extrabold text-ink" aria-live="polite">
+          <p
+            className={cn('text-display font-extrabold', tone === 'alert' ? 'text-danger' : 'text-ink')}
+            aria-live="polite"
+          >
             {title}
           </p>
         )}
@@ -281,7 +305,7 @@ function WaitingDots() {
       {['0ms', '150ms', '300ms'].map((delay) => (
         <span
           key={delay}
-          className="size-2 animate-bounce rounded-full bg-ink-soft"
+          className="size-2 animate-bounce rounded-full bg-cta"
           style={{ animationDelay: delay }}
         />
       ))}
