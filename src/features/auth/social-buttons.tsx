@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Stack } from '@/shared/ui';
 
 /**
@@ -8,8 +9,8 @@ import { Stack } from '@/shared/ui';
  * 계약이 나오면 여기만 링크로 바꾸면 된다.
  */
 const PROVIDERS = [
-  { key: 'google', mark: 'G', label: 'Google로 계속하기' },
-  { key: 'naver', mark: 'N', label: '네이버로 계속하기' },
+  { key: 'google', icon: '/google-icon.png', label: 'Google로 계속하기' },
+  { key: 'naver', icon: '/naver-icon.png', label: '네이버로 계속하기' },
 ];
 
 export function SocialButtons() {
@@ -29,12 +30,7 @@ export function SocialButtons() {
           title="준비 중이에요"
           className="flex min-h-touch w-full items-center justify-center gap-2 rounded-control border border-line-strong bg-white text-body font-semibold text-ink disabled:opacity-60"
         >
-          <span
-            aria-hidden
-            className="flex size-5 items-center justify-center rounded border border-line-strong bg-surface-raised text-[10px] font-extrabold text-ink-soft"
-          >
-            {p.mark}
-          </span>
+          <Image src={p.icon} alt={p.key} width={24} height={24} />
           {p.label}
         </button>
       ))}

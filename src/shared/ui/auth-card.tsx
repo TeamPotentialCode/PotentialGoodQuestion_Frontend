@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/ui/cn';
 
@@ -17,12 +18,13 @@ export function AuthCard({ title, subtitle, children, className }: AuthCardProps
     // 바깥 가운데 정렬은 (auth)/layout 이 한다 — 여기서 또 하면 높이가 두 배로 잡힌다
     <div className={cn('w-full rounded-card border border-line bg-white p-8 shadow-sm', className)}>
       <div className="flex flex-col items-center gap-2 pb-6">
-        <span
-          aria-hidden
-          className="rounded-card border border-dashed border-line bg-surface-raised px-4 py-2 text-caption font-semibold text-ink-soft"
-        >
-          [GOOD QUESTION 로고]
-        </span>
+        <Image
+          src="/goodquestion_logo.png"
+          alt="Good Question"
+          width={134}
+          height={48}
+          priority
+        />
         <h1 className="pt-2 text-title font-bold text-ink">{title}</h1>
         {subtitle && <p className="text-caption text-ink-soft">{subtitle}</p>}
       </div>

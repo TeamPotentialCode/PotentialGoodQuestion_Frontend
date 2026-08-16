@@ -38,7 +38,7 @@ export function ContinueCard({ session, estimatedMinutes, progress }: ContinueCa
         <p className="text-display font-extrabold text-ink">{session.storyTitle}</p>
         <p className="flex items-center text-bubble">
           {progress && (
-            <span className="font-bold text-ink">
+            <span className="font-semibold text-ink-soft">
               장면 {progress.current} / {progress.total}
             </span>
           )}
@@ -57,7 +57,7 @@ export function ContinueCard({ session, estimatedMinutes, progress }: ContinueCa
           aria-label="이야기 진행"
           className="mt-1 block h-2 w-full overflow-hidden rounded-full bg-line"
         >
-          <span className="block h-full rounded-full bg-ink" style={{ width: `${ratio}%` }} />
+          <span className="block h-full rounded-full bg-cta" style={{ width: `${ratio}%` }} />
         </span>
       </Stack>
 

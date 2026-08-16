@@ -107,7 +107,7 @@ export default function WordsPage() {
                 <FilterChip active={onlyFavorites} onClick={() => setOnlyFavorites(true)}>
                   <Icon
                     name="star"
-                    className={cn('size-4', onlyFavorites ? 'fill-cta-ink' : 'fill-ink')}
+                    className="size-4 fill-ink"
                   />
                   즐겨찾기 {words.data?.favoriteCount ?? 0}개
                 </FilterChip>
@@ -164,7 +164,7 @@ function FilterChip({
       className={cn(
         'flex min-h-touch items-center gap-2 rounded-control border px-4 text-body font-semibold',
         'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
-        active ? 'border-cta bg-cta text-cta-ink' : 'border-line-strong bg-white text-ink',
+        active ? 'border-cta bg-cta text-ink' : 'border-line bg-white text-ink-soft',
       )}
     >
       {children}

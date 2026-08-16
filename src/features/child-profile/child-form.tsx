@@ -76,11 +76,11 @@ export function ChildForm({ child, onDone, onLimitReached }: ChildFormProps) {
         <Stack gap="sm" align="center">
           <span
             aria-hidden
-            className="flex size-20 items-center justify-center rounded-full bg-surface-raised text-ink-soft"
+            className="flex size-20 items-center justify-center rounded-full border border-yellow bg-surface-warm text-camera"
           >
-            <Icon name="camera" className="size-8" />
+            <Icon name="camera" className="size-7" />
           </span>
-          <p className="text-caption text-ink-faint">사진은 나중에 추가할 수 있어요</p>
+          <p className="text-caption text-ink-soft">사진은 나중에 추가할 수 있어요</p>
         </Stack>
 
         <Field

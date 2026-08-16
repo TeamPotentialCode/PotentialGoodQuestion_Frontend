@@ -1,49 +1,70 @@
 /*
- * 디자인 토큰 — 피그마 v6 실측값 (2026-08-15, REST 로 프레임에서 추출).
+ * 디자인 토큰 — color_test01 팔레트 적용 (2026-08-16).
  * 기준 뷰포트 1024×768(아이패드 가로). 값을 바꿀 땐 여기만 고친다.
  * @theme inline 으로 Tailwind 유틸리티가 된다: bg-surface, text-ink, text-body,
  * size-touch, size-record, rounded-bubble …
  */
 :root {
-  /* 1. 팔레트 — v6 채움/선 색 그대로 */
+  /* 1. 팔레트 — color_test01 브랜드 색 */
   --palette-0: #ffffff;
-  --palette-50: #f9fafb;
-  --palette-100: #f3f4f6;
-  --palette-200: #e5e7eb;
-  --palette-300: #d1d5db;
-  --palette-400: #9ca3af;
-  --palette-500: #6b7280;
+  --palette-50: #fff9f2;   /* Background — warm cream */
+  --palette-100: #eef5f3;  /* 연한 서피스 */
+  --palette-200: #E8E4DE;  /* 구분선 */
+  --palette-300: #c5d9d4;  /* 강한 구분선 */
+  --palette-400: #9E9A94;  /* 3차 텍스트 */
+  --palette-500: #66727A;  /* Text Secondary */
   --palette-600: #4b5563;
   --palette-700: #374151;
-  --palette-800: #1f2937;
+  --palette-800: #263238;  /* Text Primary */
   --palette-900: #111827;
-  --palette-navy: #0f172a; /* 탭 활성·짙은 강조 */
-  --palette-slate: #64748b; /* 탭 비활성 */
+  --palette-navy: #75a6c6; /* Brand Primary — 탭 활성·강조 */
+  --palette-slate: #66727A; /* 탭 비활성 */
+
+  /* 브랜드 색 */
+  --palette-brand: #75a6c6;      /* Brand Primary — 텍스트 액센트·탭 활성 */
+  --palette-mint: #9eceb0;       /* Brand Secondary — Mint 보조 강조 */
+  --palette-aqua: #9ad7ca;       /* Accent Aqua — 음성·대화 포인트 */
+  --palette-light-blue: #98d6e2; /* Accent Light Blue — 약한 상태 강조 */
+  --palette-listening: #6faed6;  /* Listening — 녹음·듣기 */
+  --palette-thinking: #5f8fb5;   /* Thinking — AI 분석·생각 중 */
+  --palette-yellow: #FFD65A;     /* 아바타 카메라 원 테두리 */
 
   /* 2. 시맨틱 색 */
-  --gq-surface: var(--palette-50);
-  --gq-surface-raised: var(--palette-100);
-  --gq-ink: var(--palette-900);
-  --gq-ink-soft: var(--palette-600);
-  --gq-ink-faint: var(--palette-400); /* 3차 텍스트·비활성 CTA 글자 */
-  --gq-line: var(--palette-200); /* 카드 테두리·구분선 */
-  --gq-line-strong: var(--palette-300); /* 입력창 테두리 */
-  --gq-bubble-character: var(--palette-100);
-  --gq-bubble-child: var(--palette-200);
-  --gq-bubble-narration: var(--palette-100);
-  --gq-cta: var(--palette-900);
-  --gq-cta-ink: var(--palette-0);
-  --gq-record: var(--palette-navy);
-  --gq-record-active: var(--palette-900);
-  /* 오류 — v6 로그인 오류 상태 실측 */
-  --gq-danger: #de2b2b;
-  /* 완료 뱃지 — v6 미정, 임시 유지 */
-  --gq-done: #2fa96a;
-  /* 오디오 재생 표시(웨이브·상태 문구) 포인트 */
-  --gq-accent: #598cd9;
-  /* 하단 탭 — 활성/비활성이 ink 계열과 달라 별도 이름을 가진다 */
-  --gq-tab-active: var(--palette-navy);
-  --gq-tab-inactive: var(--palette-slate);
+  --gq-surface: var(--palette-50);          /* 전체 기본 배경 #FFF9F2 */
+  --gq-surface-raised: var(--palette-0);    /* 카드·폼·말풍선 #FFFFFF */
+  --gq-ink: var(--palette-800);             /* 제목·본문 #1F2937 */
+  --gq-ink-soft: var(--palette-500);        /* 설명·메타 #6B7280 */
+  --gq-ink-faint: var(--palette-400);       /* 3차 텍스트·비활성 CTA 글자 */
+  --gq-line: var(--palette-200);            /* 카드 테두리·구분선 */
+  --gq-line-strong: var(--palette-300);     /* 입력창 테두리 */
+  --gq-bubble-character: #eaf2f8;           /* 캐릭터 말풍선 — 연한 Brand Blue */
+  --gq-bubble-child: #e8f5ee;              /* 아이 말풍선 — 연한 Mint */
+  --gq-bubble-narration: var(--palette-100); /* 내레이션 말풍선 */
+  --gq-cta: #94D5F3;                         /* 주요 버튼 배경 — 연한 하늘색 */
+  --gq-cta-ink: var(--palette-0);           /* 버튼 텍스트 — 흰색 (어두운 배경 위 공용) */
+  --gq-record: var(--palette-listening);    /* 녹음·듣기 버튼 */
+  --gq-record-active: var(--palette-thinking); /* 분석 중 상태 */
+  /* 서피스 변형 */
+  --gq-mint-surface: #E6F7EE;              /* 아바타·플러스 원형 배경 */
+  --gq-surface-subtle: #F4F2EE;            /* 수정 버튼 등 약한 서피스 */
+  --gq-surface-warm: #FFF5E6;             /* 아동 정보 요약 박스 — warm amber */
+  --gq-camera: #67BCE3;                   /* 카메라 아이콘 색 */
+
+  /* 오류 */
+  --gq-danger: #e35d6a;
+  /* 완료·성공 */
+  --gq-done: #70b899;
+  /* 음성·대화 포인트 (웨이브·상태 문구) */
+  --gq-accent: var(--palette-aqua);
+  /* 하단 탭 */
+  --gq-tab-active: #94D5F3;
+  --gq-tab-inactive: #7B858A;
+
+  /* 이야기 뱃지 */
+  --gq-badge-active-bg: #E7F6EF;
+  --gq-badge-active-text: #3D866B;
+  --gq-badge-pending-bg: #FFF3D1;
+  --gq-badge-pending-text: #89691C;
 
   /*
    * 3. 타이포 — v6 고정 스케일 (Inter/Gothic A1, 행간 ≈1.21).
@@ -87,6 +108,17 @@
   --color-record-active: var(--gq-record-active);
   --color-tab-active: var(--gq-tab-active);
   --color-tab-inactive: var(--gq-tab-inactive);
+  --color-badge-active-bg: var(--gq-badge-active-bg);
+  --color-badge-active-text: var(--gq-badge-active-text);
+  --color-badge-pending-bg: var(--gq-badge-pending-bg);
+  --color-badge-pending-text: var(--gq-badge-pending-text);
+  --color-brand: var(--palette-brand);
+  --color-mint: var(--palette-mint);
+  --color-mint-surface: var(--gq-mint-surface);
+  --color-surface-subtle: var(--gq-surface-subtle);
+  --color-surface-warm: var(--gq-surface-warm);
+  --color-yellow: var(--palette-yellow);
+  --color-camera: var(--gq-camera);
 
   --text-caption: var(--gq-text-caption);
   --text-body: var(--gq-text-body);
