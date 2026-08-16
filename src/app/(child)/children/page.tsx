@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clearTokens } from '@/core/api/auth-token';
@@ -38,12 +39,7 @@ export default function ChildrenPage() {
       {/* 상단 바 — 시안은 구분선이 화면 끝까지 간다 */}
       <Bleed top className="border-b border-line">
         <Stack direction="row" align="center" justify="between" gap="md" className="py-3">
-          <span
-            aria-hidden
-            className="rounded-control border border-line-strong bg-surface-raised px-3 py-2 text-caption font-bold text-ink"
-          >
-            GOOD QUESTION
-          </span>
+          <Image src="/goodquestion_logo.png" alt="Good Question" width={89} height={32} priority />
           <Stack direction="row" align="center" gap="md">
             {/* 보호자 메뉴 화면이 아직 없다 — 자리만 두고 비활성 */}
             <button
@@ -62,7 +58,7 @@ export default function ChildrenPage() {
                 clearTokens();
                 router.replace('/login');
               }}
-              className="min-h-touch text-body font-medium text-ink-faint underline"
+              className="min-h-touch text-body font-medium text-ink-soft underline"
             >
               로그아웃
             </button>
@@ -97,7 +93,7 @@ export default function ChildrenPage() {
               >
                 <span
                   aria-hidden
-                  className="mb-2 flex size-[72px] items-center justify-center rounded-full bg-surface-raised text-ink-faint"
+                  className="mb-2 flex size-[72px] items-center justify-center rounded-full border border-mint bg-mint-surface text-mint"
                 >
                   <Icon name="smile" className="size-8" />
                 </span>
@@ -107,7 +103,7 @@ export default function ChildrenPage() {
               <Link
                 href={`/children/${c.childId}/edit`}
                 aria-label={`${c.name} 정보 수정`}
-                className="mt-2 rounded-[4px] border border-line-strong bg-surface-raised px-2 py-0.5 text-[12px] text-ink-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+                className="mt-2 rounded-[4px] border border-line bg-surface-subtle px-2 py-0.5 text-[12px] text-ink-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
               >
                 수정
               </Link>
@@ -121,15 +117,15 @@ export default function ChildrenPage() {
             {i === 0 ? (
               <Link
                 href="/children/new"
-                className="flex min-h-[216px] w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-line-strong text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+                className="flex min-h-[216px] w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-mint focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
               >
                 <span
                   aria-hidden
-                  className="flex size-14 items-center justify-center rounded-full bg-surface-raised text-ink-soft"
+                  className="flex size-14 items-center justify-center rounded-full bg-mint-surface text-mint"
                 >
                   <Icon name="plus" className="size-6" />
                 </span>
-                <span className="text-body font-semibold text-ink-soft">아이 추가</span>
+                <span className="text-body font-semibold text-brand">아이 추가</span>
               </Link>
             ) : (
               <div

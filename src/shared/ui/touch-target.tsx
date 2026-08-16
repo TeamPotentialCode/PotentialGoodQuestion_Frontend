@@ -30,7 +30,7 @@ const target = cva(
       },
       look: {
         // 비활성은 시안대로 연회색 판 + 회색 글자 (어두운 판을 흐리게 하지 않는다)
-        solid: 'bg-cta text-cta-ink disabled:bg-line disabled:text-ink-faint',
+        solid: 'bg-cta text-ink disabled:bg-line disabled:text-ink-faint',
         ghost: 'bg-transparent text-ink disabled:opacity-40',
         outline: 'border border-line-strong bg-white text-ink disabled:opacity-40',
       },

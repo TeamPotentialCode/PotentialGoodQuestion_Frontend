@@ -33,7 +33,7 @@ export function ChildFormScreen({ child }: { child?: Child }) {
             />
             <Link
               href="/children"
-              className="text-center text-body font-medium text-ink underline"
+              className="text-center text-body font-medium text-ink-soft underline"
             >
               취소
             </Link>

@@ -12,21 +12,26 @@ export function StoryCard({ story }: { story: StorySummary }) {
     <li className="flex">
       <Link
         href={`/stories/${story.storyId}`}
-        className="flex w-full flex-col gap-3 rounded-card border-2 border-ink bg-white p-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+        className="flex w-full flex-col gap-3 rounded-card border-2 border-line bg-white p-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
       >
         {/* thumbnailUrl 은 시드에 실재하지 않는 더미 주소라 대개 자리표시로 떨어진다 */}
-        <ImageSlot
-          src={storyThumbnail(story.storyId) ?? story.thumbnailUrl}
-          label="이미지 준비물"
-          size="bare"
-          className="aspect-square w-full rounded-control"
-        />
+        <div className="relative">
+          <ImageSlot
+            src={storyThumbnail(story.storyId) ?? story.thumbnailUrl}
+            label="이미지 준비물"
+            size="bare"
+            className="aspect-square w-full rounded-control"
+          />
+          <span className="absolute top-3 right-3 rounded-full bg-badge-active-bg px-3 py-1 text-[12px] font-bold text-badge-active-text">
+            시작 가능
+          </span>
+        </div>
 
         <Stack gap="sm">
           <p className="text-title font-extrabold text-ink">{story.title}</p>
           <p className="flex items-center text-body text-ink-soft">
             시간: {story.estimatedMinutes}분
-            <span aria-hidden className="mx-3 h-3.5 w-px bg-line-strong" />
+            <span aria-hidden className="mx-3 h-3.5 w-px bg-line" />
             난이도: {story.difficulty}
           </p>
 
@@ -35,7 +40,7 @@ export function StoryCard({ story }: { story: StorySummary }) {
               {story.topics.map((topic) => (
                 <li
                   key={topic}
-                  className="rounded-[6px] bg-surface-raised px-2.5 py-1 text-caption text-ink"
+                  className="rounded-[6px] bg-surface-subtle px-2.5 py-1 text-caption text-ink-soft"
                 >
                   {topic}
                 </li>
@@ -43,7 +48,7 @@ export function StoryCard({ story }: { story: StorySummary }) {
             </ul>
           )}
 
-          <span className="pt-1 text-body font-bold text-ink">이야기 보기 →</span>
+          <span className="pt-1 text-body font-bold text-cta">이야기 보기 →</span>
         </Stack>
       </Link>
     </li>
@@ -58,20 +63,21 @@ export function StoryCard({ story }: { story: StorySummary }) {
 export function StoryPlaceholderCard() {
   return (
     <li aria-hidden className="flex">
-      <div className="relative flex w-full flex-col gap-3 rounded-card border border-line bg-white p-4">
-        {/* "준비 중" 뱃지는 시안대로 썸네일 위에 겹쳐 얹는다 */}
-        <span className="absolute top-7 left-7 z-10 rounded-[4px] bg-ink-soft px-2.5 py-1 text-[12px] font-bold text-cta-ink">
-          준비 중
-        </span>
-        <ImageSlot label="" size="bare" className="aspect-square w-full rounded-control opacity-60" />
+      <div className="flex w-full flex-col gap-3 rounded-card border border-line bg-white p-4 opacity-60">
+        <div className="relative">
+          <ImageSlot label="" size="bare" className="aspect-square w-full rounded-control" />
+          <span className="absolute top-3 right-3 rounded-full bg-badge-pending-bg px-3 py-1 text-[12px] font-bold text-badge-pending-text">
+            준비 중
+          </span>
+        </div>
         <Stack gap="sm">
-          <p className="text-title font-extrabold text-ink-faint">새로운 이야기</p>
-          <p className="text-body text-ink-faint">시간: 15분</p>
+          <p className="text-title font-extrabold text-ink-soft">새로운 이야기 준비중</p>
+          <p className="text-body text-ink-soft">시간: 15분</p>
           <ul className="flex flex-wrap gap-2">
             {['태그', '태그'].map((label, i) => (
               <li
                 key={i}
-                className="rounded-[6px] bg-surface-raised px-2.5 py-1 text-caption text-ink-faint"
+                className="rounded-[6px] bg-surface-subtle px-2.5 py-1 text-caption text-ink-soft"
               >
                 {label}
               </li>

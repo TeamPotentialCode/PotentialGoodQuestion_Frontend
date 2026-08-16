@@ -38,7 +38,7 @@ export function Field({ label, error, hint, invalid, className, id, type, ...res
           id={inputId}
           type={isPassword && revealed ? 'text' : type}
           aria-invalid={wrong ? true : undefined}
-          aria-describedby={error ? errorId : hint ? hintId : undefined}
+          aria-describedby={[error && errorId, hint && hintId].filter(Boolean).join(' ') || undefined}
           className={cn(
             // v6: 흰 배경 · 1px 진한 회색선 · 8px 반경
             'min-h-touch w-full rounded-control border bg-white px-4 text-body text-ink',
@@ -64,15 +64,16 @@ export function Field({ label, error, hint, invalid, className, id, type, ...res
           </button>
         )}
       </div>
-      {error ? (
+      {error && (
         <p id={errorId} role="alert" className="text-caption font-medium text-danger">
           {error}
         </p>
-      ) : hint ? (
+      )}
+      {hint && (
         <p id={hintId} className="text-caption text-ink-soft">
           {hint}
         </p>
-      ) : null}
+      )}
     </div>
   );
 }

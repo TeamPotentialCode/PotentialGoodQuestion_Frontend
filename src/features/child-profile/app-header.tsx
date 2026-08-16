@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { Child } from '@/core/api/types';
 import { ChildChip } from '@/features/child-profile/child-chip';
 import { Bleed, Icon, Stack } from '@/shared/ui';
@@ -31,12 +32,13 @@ export function AppHeader({ list, selected, onSelect, title, icon }: AppHeaderPr
             {title}
           </h1>
         ) : (
-          <span
-            aria-hidden
-            className="rounded-control border border-dashed border-line-strong bg-surface-raised px-3 py-1.5 text-caption font-semibold text-ink-soft"
-          >
-            [GQ 로고]
-          </span>
+          <Image
+            src="/goodquestion_logo.png"
+            alt="Good Question"
+            width={100}
+            height={36}
+            priority
+          />
         )}
 
         <ChildChip list={list} selected={selected} onSelect={onSelect} />

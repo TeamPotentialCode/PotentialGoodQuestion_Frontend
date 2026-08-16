@@ -23,7 +23,7 @@ export function HomeStoryCard({ story }: { story: StorySummary }) {
         />
         <Stack gap="sm">
           <Stack direction="row" align="center" justify="between" gap="sm">
-            <span className="rounded-[4px] bg-tab-active px-2.5 py-1 text-[12px] font-bold text-cta-ink">
+            <span className="rounded-[4px] bg-badge-active-bg px-2.5 py-1 text-[12px] font-bold text-badge-active-text">
               시작 가능
             </span>
             <span className="text-body text-ink-soft">{story.estimatedMinutes}분</span>
@@ -46,7 +46,7 @@ export function HomeStoryPlaceholderCard() {
         <ImageSlot label="이야기 썸네일" size="bare" className="h-[104px] rounded-control opacity-60" />
         <Stack gap="sm">
           <Stack direction="row" align="center" justify="between" gap="sm">
-            <span className="rounded-[4px] bg-surface-raised px-2.5 py-1 text-[12px] font-bold text-ink-faint">
+            <span className="rounded-[4px] border border-line bg-badge-pending-bg px-2.5 py-1 text-[12px] font-bold text-badge-pending-text">
               준비 중
             </span>
             <span className="text-body text-ink-faint">15분</span>

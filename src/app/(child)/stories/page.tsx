@@ -52,7 +52,7 @@ export default function StoriesPage() {
           title="이야기"
         />
 
-        <h2 className="text-title font-bold text-ink">어떤 이야기를 만나볼까?</h2>
+        <h2 className="text-title font-bold text-ink-soft">어떤 이야기를 만나볼까?</h2>
 
         <ul className="flex flex-wrap gap-3" aria-label="주제 필터">
           {[ALL, ...topics].map((name) => (
@@ -65,8 +65,8 @@ export default function StoriesPage() {
                   'min-h-touch rounded-control border px-4 text-body font-semibold',
                   'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft',
                   topic === name
-                    ? 'border-cta bg-cta text-cta-ink'
-                    : 'border-line-strong bg-white text-ink',
+                    ? 'border-cta bg-cta text-ink'
+                    : 'border-line bg-white text-ink-soft',
                 )}
               >
                 {name}
@@ -88,7 +88,7 @@ export default function StoriesPage() {
             <Stack gap="sm" align="center" className="py-16">
               <span
                 aria-hidden
-                className="flex size-14 items-center justify-center rounded-full bg-surface-raised text-ink-soft"
+                className="flex size-14 items-center justify-center rounded-full bg-surface-subtle text-ink-faint"
               >
                 <Icon name="book" className="size-7" />
               </span>

@@ -60,12 +60,12 @@ export function ConsentScreen({ child }: { child: Child }) {
               </p>
             </Stack>
 
-            <Stack gap="sm" className="rounded-control bg-surface-raised px-4 py-3">
-              <p className="text-caption text-ink-faint">등록할 아동 정보</p>
+            <Stack gap="sm" className="rounded-control border border-line bg-surface-warm px-4 py-3">
+              <p className="text-caption text-ink-soft">등록할 아동 정보</p>
               <p className="flex items-center gap-2 text-bubble font-bold text-ink">
                 <span
                   aria-hidden
-                  className="flex size-7 items-center justify-center rounded-full bg-line text-ink-soft"
+                  className="flex size-7 items-center justify-center rounded-full border border-mint bg-mint-surface text-mint"
                 >
                   <Icon name="smile" className="size-4" />
                 </span>
@@ -91,7 +91,7 @@ export function ConsentScreen({ child }: { child: Child }) {
               <button
                 type="button"
                 onClick={() => setDetailOpen(true)}
-                className="mt-2 ml-8 min-h-touch text-caption font-semibold text-ink underline"
+                className="mt-2 ml-8 min-h-touch text-caption font-semibold text-brand underline"
               >
                 자세히 보기 &gt;
               </button>
@@ -147,8 +147,8 @@ function ConsentDetail({ onClose }: { onClose: () => void }) {
             </Stack>
           ))}
 
-          <TouchTarget size="lg" look="outline" onClick={onClose}>
-            닫기
+          <TouchTarget size="lg" onClick={onClose}>
+            확인
           </TouchTarget>
         </Stack>
       </div>

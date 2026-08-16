@@ -21,7 +21,7 @@ export function ActivityHeader({ title, step, storyTitle }: ActivityHeaderProps)
           <Link
             href="/home"
             aria-label="활동 나가기"
-            className="flex size-touch items-center justify-center rounded-full text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
+            className="flex size-touch items-center justify-center rounded-full text-ink-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink-soft"
           >
             <Icon name="close" className="size-7" />
           </Link>
@@ -29,7 +29,7 @@ export function ActivityHeader({ title, step, storyTitle }: ActivityHeaderProps)
         </span>
         <h1 className="text-body font-medium text-ink-soft">{title}</h1>
         <span className="min-w-40 text-right">
-          <span className="rounded-[6px] border border-line bg-white px-3 py-1.5 text-caption font-bold text-ink">
+          <span className="rounded-[6px] border border-line bg-surface-subtle px-3 py-1.5 text-caption font-bold text-ink">
             {step}
           </span>
         </span>
